@@ -27,6 +27,9 @@ jobs:
           cd temp-external-repo
           git clone https://x-access-token:${{ secrets.PAT_REPOSITORIO_DESARROLLO }}@github.com/SIU01-DEV/SIU01.git .
           
+          echo "Limpiando repositorio destino (excepto .git)..."
+          find . -mindepth 1 -maxdepth 1 -not -path "./.git" -exec rm -rf {} \;
+          
           echo "Copiando contenido actual sobre el repositorio destino..."
           find .. -mindepth 1 -maxdepth 1 -not -path "../.git" -not -path "../temp-external-repo" -exec cp -r {} . \;
           
@@ -37,10 +40,14 @@ jobs:
           git add -A
           
           echo "Creando commit con los cambios..."
-          git commit -m "Sync changes from master branch"
-          
-          echo "Haciendo push de los cambios al repositorio destino..."
-          git push origin master
+          # Solo hacer commit si hay cambios
+          if git diff --staged --quiet; then
+            echo "No hay cambios para sincronizar"
+          else
+            git commit -m "Sync changes from master branch (includes deleted files)"
+            echo "Haciendo push de los cambios al repositorio destino..."
+            git push origin master
+          fi
           
           cd ..
         continue-on-error: true
