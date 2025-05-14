@@ -18,7 +18,7 @@ jobs:
       - name: Configure Git
         run: |
           git config --global user.name "SIASIS Hacia Desarrollo Sync Bot"
-          git config --global user.email "siasis-sync@asuncion8.edu.pe"
+          git config --global user.email "siasis-sync-from-GeoCoderDev@asuncion8.edu.pe"
       
       - name: Push to External Repository
         run: |
