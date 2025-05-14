@@ -1,4 +1,4 @@
-name: Mirror to External Repository
+name: Reflejo a Repositorio de Desarrollo
 
 on:
   push:
