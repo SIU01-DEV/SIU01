@@ -146,8 +146,7 @@ export const ListaPersonal = ({
       );
 
       console.log("JJJJJJJJJJJJ", horaEsperada);
-      const fecthCancelable = await fetchSiasisAPI({
-        endpoint: "/api/asistencia-diaria/marcar",
+      const response = await fetch("/api/asistencia-hoy/marcar",{
         method: "POST",
         body: JSON.stringify({
           DNI: personal.DNI,
@@ -156,9 +155,6 @@ export const ListaPersonal = ({
           FechaHoraEsperadaISO: new Date(horaEsperada).toISOString(),
         } as RegistrarAsistenciaIndividualRequestBody),
       });
-
-      // Realizar la petición para registrar la asistencia
-      const response = await fecthCancelable!.fetch();
 
       const data =
         (await response.json()) as RegistrarAsistenciaIndividualSuccessResponse;
