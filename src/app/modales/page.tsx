@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import MarcarAsistenciaPropiaDePersonalModal from "../../components/modals/AsistenciaPropiaPersonal/MarcarAsistenciaPropiaDePersonalModal";
+import MarcarAsistenciaPropiaDePersonalModal from "@/components/modals/AsistenciaPropiaPersonal/MarcarAsistenciaPropiaDePersonalModal";
 
 const Modales = () => {
   const [showModal, setShowModal] = useState(true);
