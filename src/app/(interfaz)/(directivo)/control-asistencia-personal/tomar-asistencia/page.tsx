@@ -24,12 +24,16 @@ import {
   IniciarTomaAsistenciaRequestBody,
   TipoAsistencia,
 } from "@/interfaces/shared/AsistenciaRequests";
+import { ENTORNO } from "@/constants/ENTORNO";
+import { Entorno } from "@/interfaces/shared/Entornos";
 
 const TomarAsistenciaPersonal = () => {
+
+  console.log("entornoooooooo: ", ENTORNO)
   const [
     showFullScreenModalAsistenciaPersonal,
     setShowFullScreenModalAsistenciaPersonal,
-  ] = useState(process.env.NODE_ENV === "development");
+  ] = useState(ENTORNO === Entorno.LOCAL);
 
   const fechaHoraActual = useSelector(
     (state: RootState) => state.others.fechaHoraActualReal
@@ -119,7 +123,7 @@ const TomarAsistenciaPersonal = () => {
         await new DatosAsistenciaHoyIDB().obtenerEstadoTomaAsistencia(
           TipoAsistencia.ParaPersonal
         );
-        console.log("HOLAAA",estadoTomaAsistenciaDePersonalActual)
+      console.log("HOLAAA", estadoTomaAsistenciaDePersonalActual);
       setEstadoTomaAsistenciaDePersonal(estadoTomaAsistenciaDePersonalActual);
     };
     obtenerEstadoAsistencia();

@@ -200,7 +200,7 @@ const NavBarFooter = ({ Rol }: { Rol: RolesSistema }) => {
         montado && navBarFooterIsOpen
           ? "animate__slideInUp"
           : "animate__slideOutDown"
-      } [animation-duration:150ms] flex items-center justify-center w-[100vw] border-2 border-negro fixed z-[1001] bottom-0 left-0`}
+      } [animation-duration:150ms] flex items-center justify-center w-[100vw] fixed z-[1001] bottom-0 left-0`}
     >
       {getNavBarFooterByRol(Rol)}
     </nav>
