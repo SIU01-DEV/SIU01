@@ -1,8 +1,10 @@
+// components/shared/layouts/NavBarFooter.tsx
 "use client";
 import LibretaConLapiz from "@/components/icons/LibretaConLapiz";
 import PersonaLIbro from "@/components/icons/PersonaLibro";
 import PizarraAula from "@/components/icons/PizarraAula";
 import RelojTIempo from "@/components/icons/RelojTIempo";
+import Auxiliar from "@/components/icons/Auxiliar";
 import { RootState } from "@/global/store";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { useEffect, useState } from "react";
@@ -64,13 +66,47 @@ function getNavBarFooterByRol(Rol: RolesSistema): React.ReactNode {
 
     case RolesSistema.Auxiliar:
       return (
-        <div>
+        <div
+          className={`
+            hidden lg:flex
+            justify-center items-center
+            w-full
+            py-4 px-8
+            bg-white
+            shadow-[0_-6px_20px_0_rgba(0,0,0,0.12)]
+
+            border-t border-gray-200
+            gap-16
+          `}
+        >
           <InterceptedLinkForDataThatCouldBeLost
             href="/"
-            className="flex flex-col"
+            className="flex flex-col items-center group transition-all duration-200"
           >
-            <LibretaConLapiz className="w-[3rem] " />
-            <span>Modulo de Asistencia</span>
+            <LibretaConLapiz className="w-12 h-12 text-black group-hover:text-red-500 transition-colors duration-200" />
+            <span className="mt-2 text-sm font-medium text-black group-hover:text-red-500 transition-colors duration-200">
+              Tomar Asistencia
+            </span>
+          </InterceptedLinkForDataThatCouldBeLost>
+          
+          <InterceptedLinkForDataThatCouldBeLost
+            href="/"
+            className="flex flex-col items-center group transition-all duration-200"
+          >
+            <Auxiliar className="w-12 h-12 text-black group-hover:text-red-500 transition-colors duration-200" />
+            <span className="mt-2 text-sm font-medium text-black group-hover:text-red-500 transition-colors duration-200">
+              Asistencias Escolares
+            </span>
+          </InterceptedLinkForDataThatCouldBeLost>
+          
+          <InterceptedLinkForDataThatCouldBeLost
+            href="/"
+            className="flex flex-col items-center group transition-all duration-200"
+          >
+            <PersonaLIbro className="w-12 h-12 text-black group-hover:text-red-500 transition-colors duration-200" />
+            <span className="mt-2 text-sm font-medium text-black group-hover:text-red-500 transition-colors duration-200">
+              Mis Asistencias
+            </span>
           </InterceptedLinkForDataThatCouldBeLost>
         </div>
       );
