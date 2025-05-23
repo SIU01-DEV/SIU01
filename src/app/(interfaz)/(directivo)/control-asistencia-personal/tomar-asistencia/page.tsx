@@ -29,7 +29,6 @@ import { Entorno } from "@/interfaces/shared/Entornos";
 
 const TomarAsistenciaPersonal = () => {
 
-  console.log("entornoooooooo: ", ENTORNO)
   const [
     showFullScreenModalAsistenciaPersonal,
     setShowFullScreenModalAsistenciaPersonal,
