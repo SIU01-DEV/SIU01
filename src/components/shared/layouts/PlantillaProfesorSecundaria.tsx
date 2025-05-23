@@ -18,7 +18,7 @@ const PlantillaProfesorSecundaria = ({
   Google_Drive_Foto_ID: string | null;
 }) => {
   return (
-    <>
+    <main className="w-full grid grid-rows-[min-content_1fr_min-content] min-h-[100dvh]">
       <Header
         Genero={Genero}
         Nombres={Nombres}
@@ -28,7 +28,7 @@ const PlantillaProfesorSecundaria = ({
       />
       {children}
       <NavBarFooter Rol={RolesSistema.ProfesorSecundaria} />
-    </>
+    </main>
   );
 };
 

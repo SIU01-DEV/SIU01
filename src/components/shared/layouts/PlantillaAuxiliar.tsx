@@ -18,7 +18,7 @@ const PlantillaAuxiliar = ({
   Google_Drive_Foto_ID: string | null;
 }) => {
   return (
-    <>
+    <main className="w-full grid grid-rows-[min-content_1fr_min-content] min-h-[100dvh]">
       <Header
         Genero={Genero}
         Google_Drive_Foto_ID={Google_Drive_Foto_ID}
@@ -28,8 +28,8 @@ const PlantillaAuxiliar = ({
       />
       {children}
 
-      <NavBarFooter Rol={RolesSistema.Auxiliar}/>
-    </>
+      <NavBarFooter Rol={RolesSistema.Auxiliar} />
+    </main>
   );
 };
 export default PlantillaAuxiliar;

@@ -18,7 +18,7 @@ const PlantillaTutor = ({
   Google_Drive_Foto_ID: string | null;
 }) => {
   return (
-    <>
+    <main className="w-full grid grid-rows-[min-content_1fr_min-content] min-h-[100dvh]">
       <Header
         Genero={Genero}
         Google_Drive_Foto_ID={Google_Drive_Foto_ID}
@@ -28,8 +28,8 @@ const PlantillaTutor = ({
       />
       {children}
 
-      <NavBarFooter Rol={RolesSistema.Tutor}/>
-    </>
+      <NavBarFooter Rol={RolesSistema.Tutor} />
+    </main>
   );
 };
 
