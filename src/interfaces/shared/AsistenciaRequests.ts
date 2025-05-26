@@ -3,14 +3,22 @@ import { RolesSistema } from "./RolesSistema";
 import { Meses } from "./Meses";
 import { ActoresSistema } from "./ActoresSistema";
 import { EstadosAsistenciaPersonal } from "./EstadosAsistenciaPersonal";
+import { EstadosAsistencia } from "./EstadosAsistenciaEstudiantes";
 
 export interface RegistroAsistenciaUnitariaPersonal {
   ModoRegistro: ModoRegistro;
   DNI: string;
   Rol: RolesSistema | ActoresSistema;
   Dia: number;
-  Detalles: DetallesAsistenciaUnitariaPersonal | null;
+  Detalles:
+    | DetallesAsistenciaUnitariaPersonal
+    | DetallesAsistenciaUnitariaEstudiantes
+    | null;
   esNuevoRegistro: boolean;
+}
+
+export interface DetallesAsistenciaUnitariaEstudiantes {
+  Estado: EstadosAsistencia;
 }
 
 export type RegistroAsistenciaMensualPersonal = Pick<
@@ -29,7 +37,10 @@ export interface DetallesAsistenciaUnitariaPersonal {
 export interface AsistenciaDiariaResultado {
   DNI: string;
   AsistenciaMarcada: boolean;
-  Detalles: DetallesAsistenciaUnitariaPersonal | null;
+  Detalles:
+    | DetallesAsistenciaUnitariaPersonal
+    | DetallesAsistenciaUnitariaEstudiantes
+    | null;
 }
 
 export interface ConsultarAsistenciasDiariasPorActorEnRedisResponseBody {

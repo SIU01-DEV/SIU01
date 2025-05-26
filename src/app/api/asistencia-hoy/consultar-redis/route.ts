@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
       const valor = await redisClientInstance.get(clave);
 
       // if (ENTORNO === Entorno.LOCAL)
-        console.log(`🔍 Procesando clave: ${clave}, valor:`, valor);
+      console.log(`🔍 Procesando clave: ${clave}, valor:`, valor);
 
       if (valor) {
         const partes = clave.split(":");
@@ -130,9 +130,9 @@ export async function GET(req: NextRequest) {
               const desfaseSegundos = parseInt(valor[1] as string);
 
               // if (ENTORNO === Entorno.LOCAL)
-                console.log(
-                  `📝 Datos extraídos - DNI: ${dni}, Timestamp: ${timestamp}, Desfase: ${desfaseSegundos}`
-                );
+              console.log(
+                `📝 Datos extraídos - DNI: ${dni}, Timestamp: ${timestamp}, Desfase: ${desfaseSegundos}`
+              );
 
               resultados.push({
                 DNI: dni,
