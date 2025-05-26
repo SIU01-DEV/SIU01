@@ -2,7 +2,7 @@ import { ModoRegistro } from "./ModoRegistroPersonal";
 import { RolesSistema } from "./RolesSistema";
 import { Meses } from "./Meses";
 import { ActoresSistema } from "./ActoresSistema";
-import { EstadosAsistencia } from "./EstadosAsistenciaEstudiantes";
+import { EstadosAsistenciaPersonal } from "./EstadosAsistenciaPersonal";
 
 export interface RegistroAsistenciaUnitariaPersonal {
   ModoRegistro: ModoRegistro;
@@ -26,17 +26,10 @@ export interface DetallesAsistenciaUnitariaPersonal {
   DesfaseSegundos: number;
 }
 
-export interface DetallesAsistenciaUnitariaEstudiante {
-  Estado: EstadosAsistencia;
-}
-
 export interface AsistenciaDiariaResultado {
   DNI: string;
   AsistenciaMarcada: boolean;
-  Detalles:
-    | DetallesAsistenciaUnitariaPersonal
-    | DetallesAsistenciaUnitariaEstudiante
-    | null;
+  Detalles: DetallesAsistenciaUnitariaPersonal | null;
 }
 
 export interface ConsultarAsistenciasDiariasPorActorEnRedisResponseBody {
@@ -63,4 +56,25 @@ export interface EstadoTomaAsistenciaResponseBody {
 
 export interface IniciarTomaAsistenciaRequestBody {
   TipoAsistencia: TipoAsistencia;
+}
+
+// Interfaces para asistencia mensual
+export interface AsistenciaMensualPersonal {
+  Id_Registro_Mensual: number;
+  mes: Meses;
+  Dni_Personal: string;
+  registros: Record<string, RegistroEntradaSalida>;
+}
+
+// Interfaces para los registros de entrada/salida
+export interface RegistroEntradaSalida {
+  timestamp: number;
+  desfaseSegundos: number;
+  estado: EstadosAsistenciaPersonal;
+}
+
+export interface RegistroEntradaSalidaPersonal {
+  timestamp: number;
+  desfaseSegundos: number;
+  estado: EstadosAsistenciaPersonal;
 }

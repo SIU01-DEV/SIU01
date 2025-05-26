@@ -19,6 +19,7 @@ import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { ActoresSistema } from "@/interfaces/shared/ActoresSistema";
 import { Loader2 } from "lucide-react";
 import { ConsultarAsistenciasDiariasPorActorEnRedisResponseBody } from "@/interfaces/shared/AsistenciaRequests";
+import { ErrorResponseAPIBase } from "@/interfaces/shared/apis/types";
 
 // Obtener texto según el rol
 export const obtenerTextoRol = (rol: RolesSistema): string => {
@@ -49,9 +50,23 @@ export const ListaPersonal = ({
   fechaHoraActual: FechaHoraActualRealState;
 }) => {
   const { toast } = useToast();
-  const [procesando, setProcesando] = useState<string | null>(null); // Guarda el DNI que se está procesando
+  const [procesando, setProcesando] = useState<string | null>(null);
   const [asistenciasMarcadas, setAsistenciasMarcadas] = useState<string[]>([]);
   const [cargandoAsistencias, setCargandoAsistencias] = useState(true);
+
+  // Estados para el sistema de manejo de errores
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<ErrorResponseAPIBase | null>(null);
+
+  // Crear instancia de AsistenciaDePersonalIDB con el constructor actualizado
+  const asistenciaDePersonalIDB = new AsistenciaDePersonalIDB(
+    "API01",
+    setIsLoading,
+    setError,
+    (message) => {
+      console.log("Mensaje de éxito:", message);
+    }
+  );
 
   // Obtenemos los datos del personal
   const personal = rol
@@ -81,7 +96,7 @@ export const ListaPersonal = ({
             actorParam = ActoresSistema.PersonalAdministrativo;
             break;
           default:
-            actorParam = ActoresSistema.Auxiliar; // Valor por defecto
+            actorParam = ActoresSistema.Auxiliar;
         }
 
         // Consultar las asistencias ya registradas
@@ -93,9 +108,13 @@ export const ListaPersonal = ({
           const data =
             (await response.json()) as ConsultarAsistenciasDiariasPorActorEnRedisResponseBody;
 
-          const asistenciaDePersonalIDB = new AsistenciaDePersonalIDB();
+          // Sincronizar con IndexedDB usando la nueva instancia
+          const statsSync =
+            await asistenciaDePersonalIDB.sincronizarAsistenciasDesdeRedis(
+              data
+            );
 
-          await asistenciaDePersonalIDB.sincronizarAsistenciasDesdeRedis(data);
+          console.log("Estadísticas de sincronización:", statsSync);
 
           // Extraer los DNIs de las personas que ya han marcado asistencia
           const dnis = data.Resultados.map((resultado) => resultado.DNI);
@@ -105,6 +124,11 @@ export const ListaPersonal = ({
         }
       } catch (error) {
         console.error("Error al consultar asistencias registradas:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las asistencias registradas",
+          variant: "destructive",
+        });
       } finally {
         setCargandoAsistencias(false);
       }
@@ -115,22 +139,26 @@ export const ListaPersonal = ({
     }
   }, [rol, modoRegistro]);
 
-  // Manejador para cuando se selecciona una persona
+  // En el manejador de persona seleccionada del componente ListaPersonal:
   const handlePersonaSeleccionada = async (
     personal: PersonalParaTomarAsistencia
   ) => {
     if (procesando !== null) return;
 
-    setProcesando(personal.DNI); // Establecer el DNI específico que se está procesando
+    setProcesando(personal.DNI);
 
     try {
-      // Obtener la hora programada usando el método simplificado
-      const horaEsperada =
-        handlerDatosAsistenciaHoyDirectivo.obtenerHorarioPersonal(
+      // ✅ SÚPER SIMPLE: Obtener la hora como string ISO directamente del JSON
+      const horaEsperadaISO =
+        handlerDatosAsistenciaHoyDirectivo.obtenerHorarioPersonalISO(
           rol!,
           personal.DNI,
           modoRegistro
         );
+
+      // Debug para verificar
+      console.log("🕐 Hora esperada ISO (directa del JSON):", horaEsperadaISO);
+      console.log("✅ Sin conversiones, sin problemas de zona horaria!");
 
       // Feedback por voz
       const speaker = Speaker.getInstance();
@@ -142,39 +170,43 @@ export const ListaPersonal = ({
         ).shift()} ${personal.Apellidos.split(" ").shift()}`
       );
 
-      console.log("JJJJJJJJJJJJ", horaEsperada);
+      // Llamar a la API para registrar en Redis
       const response = await fetch("/api/asistencia-hoy/marcar", {
         method: "POST",
         body: JSON.stringify({
           DNI: personal.DNI,
           Actor: rol,
           ModoRegistro: modoRegistro,
-          FechaHoraEsperadaISO: new Date(horaEsperada).toISOString(),
+          FechaHoraEsperadaISO: horaEsperadaISO, // String ISO directo del JSON
         } as RegistrarAsistenciaIndividualRequestBody),
       });
 
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
       const data =
         (await response.json()) as RegistrarAsistenciaIndividualSuccessResponse;
-      console.log(data);
 
-      const asistenciaDePersonalIDB = new AsistenciaDePersonalIDB();
-
-      await asistenciaDePersonalIDB.marcarAsistencia({
-        datos: {
-          Rol: rol!,
-          Dia: fechaHoraActual.utilidades!.diaMes,
-          DNI: personal.DNI,
-          esNuevoRegistro: data.data.esNuevoRegistro,
-          ModoRegistro: modoRegistro,
-          Detalles: {
-            DesfaseSegundos: data.data.desfaseSegundos,
-            Timestamp: data.data.timestamp,
-          },
-        },
-      });
+      console.log("Respuesta de la API:", data);
 
       if (data.success) {
-        // Actualizar el estado para marcar esta persona como que ya registró asistencia
+        // Guardar en IndexedDB
+        await asistenciaDePersonalIDB.marcarAsistencia({
+          datos: {
+            Rol: rol!,
+            Dia: fechaHoraActual.utilidades!.diaMes,
+            DNI: personal.DNI,
+            esNuevoRegistro: data.data.esNuevoRegistro,
+            ModoRegistro: modoRegistro,
+            Detalles: {
+              DesfaseSegundos: data.data.desfaseSegundos,
+              Timestamp: data.data.timestamp,
+            },
+          },
+        });
+
+        // Actualizar estado
         setAsistenciasMarcadas((prev) => [...prev, personal.DNI]);
 
         toast({
@@ -191,9 +223,16 @@ export const ListaPersonal = ({
       }
     } catch (error) {
       console.error("Error al registrar asistencia:", error);
+
+      let errorMessage = "Ocurrió un error al procesar la solicitud";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Error",
-        description: "Ocurrió un error al procesar la solicitud",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -202,6 +241,24 @@ export const ListaPersonal = ({
   };
 
   const textoRol = obtenerTextoRol(rol);
+
+  // Mostrar error si existe
+  if (error) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center">
+        <div className="text-center max-w-md">
+          <p className="text-xl text-red-600 mb-2">Error del Sistema</p>
+          <p className="text-sm text-gray-600 mb-4">{error.message}</p>
+          <button
+            onClick={() => setError(null)}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Mensaje para cuando no hay personal
   if (personal.length === 0) {
@@ -226,10 +283,12 @@ export const ListaPersonal = ({
           Ahora haz clic en tu nombre
         </h3>
 
-        {cargandoAsistencias && (
+        {(cargandoAsistencias || isLoading) && (
           <p className="text-center text-blue-500 mt-1">
             <Loader2 className="inline-block w-4 h-4 mr-1 animate-spin" />
-            Cargando asistencias registradas...
+            {cargandoAsistencias
+              ? "Cargando asistencias registradas..."
+              : "Procesando asistencia..."}
           </p>
         )}
       </div>
@@ -249,7 +308,7 @@ export const ListaPersonal = ({
                   asistenciasMarcadas.includes(persona.DNI)
                 }
                 loading={procesando === persona.DNI}
-                globalLoading={cargandoAsistencias} // Pasar el estado de carga global
+                globalLoading={cargandoAsistencias || isLoading}
               />
             ))}
           </div>

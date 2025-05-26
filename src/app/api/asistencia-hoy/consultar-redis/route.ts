@@ -13,6 +13,8 @@ import {
 import { Meses } from "@/interfaces/shared/Meses";
 import { determinarTipoAsistencia } from "../_helpers/determinarTipoAsistencia";
 import { EstadosAsistencia } from "@/interfaces/shared/EstadosAsistenciaEstudiantes"; // 👈 IMPORTAR EL ENUM
+// import { ENTORNO } from "@/constants/ENTORNO";
+// import { Entorno } from "@/interfaces/shared/Entornos";
 
 export async function GET(req: NextRequest) {
   try {
@@ -90,7 +92,8 @@ export async function GET(req: NextRequest) {
       // Obtener el valor almacenado en Redis para esta clave
       const valor = await redisClientInstance.get(clave);
 
-      console.log(`🔍 Procesando clave: ${clave}, valor:`, valor);
+      // if (ENTORNO === Entorno.LOCAL)
+        console.log(`🔍 Procesando clave: ${clave}, valor:`, valor);
 
       if (valor) {
         const partes = clave.split(":");
@@ -100,7 +103,12 @@ export async function GET(req: NextRequest) {
           // Verificar si es un estudiante o personal
           if (actor === ActoresSistema.Estudiante) {
             // Para estudiantes, el valor es directamente un estado del enum EstadosAsistencia
-            if (typeof valor === 'string' && Object.values(EstadosAsistencia).includes(valor as EstadosAsistencia)) {
+            if (
+              typeof valor === "string" &&
+              Object.values(EstadosAsistencia).includes(
+                valor as EstadosAsistencia
+              )
+            ) {
               resultados.push({
                 DNI: dni,
                 AsistenciaMarcada: true,
@@ -109,7 +117,10 @@ export async function GET(req: NextRequest) {
                 },
               });
             } else {
-              console.warn(`⚠️  Estado de asistencia inválido para estudiante en clave ${clave}:`, valor);
+              console.warn(
+                `⚠️  Estado de asistencia inválido para estudiante en clave ${clave}:`,
+                valor
+              );
             }
           } else {
             // Para personal, el valor es un array [timestamp, desfaseSegundos]
@@ -118,7 +129,10 @@ export async function GET(req: NextRequest) {
               const timestamp = parseInt(valor[0] as string);
               const desfaseSegundos = parseInt(valor[1] as string);
 
-              console.log(`📝 Datos extraídos - DNI: ${dni}, Timestamp: ${timestamp}, Desfase: ${desfaseSegundos}`);
+              // if (ENTORNO === Entorno.LOCAL)
+                console.log(
+                  `📝 Datos extraídos - DNI: ${dni}, Timestamp: ${timestamp}, Desfase: ${desfaseSegundos}`
+                );
 
               resultados.push({
                 DNI: dni,
@@ -129,32 +143,47 @@ export async function GET(req: NextRequest) {
                 },
               });
             } else {
-              console.warn(`⚠️  Valor inesperado para personal en clave ${clave}:`, valor);
+              console.warn(
+                `⚠️  Valor inesperado para personal en clave ${clave}:`,
+                valor
+              );
             }
           }
         }
       }
     }
 
-    // Si es un estudiante y no encontramos resultados en la instancia principal, 
+    // Si es un estudiante y no encontramos resultados en la instancia principal,
     // probamos en la otra instancia (primaria o secundaria)
     if (actor === ActoresSistema.Estudiante && resultados.length === 0) {
-      console.log("🔄 No se encontraron resultados en la instancia principal, probando en la otra...");
-      
-      // Probar con la otra instancia de Redis para estudiantes
-      const otraInstancia = tipoAsistencia === TipoAsistencia.ParaEstudiantesSecundaria 
-        ? TipoAsistencia.ParaEstudiantesPrimaria
-        : TipoAsistencia.ParaEstudiantesSecundaria;
-        
-      const redisClientOtraInstancia = redisClient(otraInstancia);
-      const clavesEnOtraInstancia = await redisClientOtraInstancia.keys(patronBusqueda);
+      console.log(
+        "🔄 No se encontraron resultados en la instancia principal, probando en la otra..."
+      );
 
-      console.log(`📊 Claves encontradas en otra instancia: ${clavesEnOtraInstancia.length}`, clavesEnOtraInstancia);
+      // Probar con la otra instancia de Redis para estudiantes
+      const otraInstancia =
+        tipoAsistencia === TipoAsistencia.ParaEstudiantesSecundaria
+          ? TipoAsistencia.ParaEstudiantesPrimaria
+          : TipoAsistencia.ParaEstudiantesSecundaria;
+
+      const redisClientOtraInstancia = redisClient(otraInstancia);
+      const clavesEnOtraInstancia = await redisClientOtraInstancia.keys(
+        patronBusqueda
+      );
+
+      console.log(
+        `📊 Claves encontradas en otra instancia: ${clavesEnOtraInstancia.length}`,
+        clavesEnOtraInstancia
+      );
 
       for (const clave of clavesEnOtraInstancia) {
         const valor = await redisClientOtraInstancia.get(clave);
 
-        if (valor && typeof valor === 'string' && Object.values(EstadosAsistencia).includes(valor as EstadosAsistencia)) {
+        if (
+          valor &&
+          typeof valor === "string" &&
+          Object.values(EstadosAsistencia).includes(valor as EstadosAsistencia)
+        ) {
           const partes = clave.split(":");
           if (partes.length >= 4) {
             const dni = partes[3];
@@ -168,7 +197,10 @@ export async function GET(req: NextRequest) {
             });
           }
         } else {
-          console.warn(`⚠️  Estado de asistencia inválido en otra instancia para clave ${clave}:`, valor);
+          console.warn(
+            `⚠️  Estado de asistencia inválido en otra instancia para clave ${clave}:`,
+            valor
+          );
         }
       }
     }

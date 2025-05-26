@@ -75,9 +75,9 @@ function getNavBarFooterByRol(
   Rol: RolesSistema,
   pathname: string
 ): React.ReactNode {
-  // Filtrar módulos disponibles para el rol actual
+  // Filtrar módulos disponibles para el rol actual que estén activos
   const availableModules = allSiasisModules.filter((module) =>
-    module.allowedRoles.includes(Rol)
+    module.allowedRoles.includes(Rol) && module.active
   );
 
   if (availableModules.length === 0) {
@@ -134,7 +134,7 @@ const NavBarFooter = ({ Rol }: { Rol: RolesSistema }) => {
         [animation-duration:150ms] 
         flex items-center justify-center 
         max-w-[100vw] w-full 
-         z-[1001] bottom-0 left-0
+         z-[101] bottom-0 left-0
       `}
     >
       {getNavBarFooterByRol(Rol, pathname)}

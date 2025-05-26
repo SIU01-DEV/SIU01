@@ -6,7 +6,6 @@ import { RootState } from "@/global/store";
 import { HandlerDirectivoAsistenciaResponse } from "@/lib/utils/local/db/models/DatosAsistenciaHoy/handlers/HandlerDirectivoAsistenciaResponse";
 
 import { alterarUTCaZonaPeruana } from "@/lib/helpers/alteradores/alterarUTCaZonaPeruana";
-import formatearISOaFormato12Horas from "@/lib/helpers/formatters/formatearISOaFormato12Horas";
 import { HORA_ACTUALIZACION_DATOS_ASISTENCIA_DIARIOS } from "@/constants/HORA_ACTUALIZACION_DATOS_ASISTENCIA_DIARIOS";
 import { tiempoRestanteHasta } from "@/lib/calc/time/tiempoRestanteHasta";
 import { DatosAsistenciaHoyIDB } from "@/lib/utils/local/db/models/DatosAsistenciaHoy/DatosAsistenciaHoyIDB";
@@ -26,9 +25,9 @@ import {
 } from "@/interfaces/shared/AsistenciaRequests";
 import { ENTORNO } from "@/constants/ENTORNO";
 import { Entorno } from "@/interfaces/shared/Entornos";
+import { formatearISOaFormato12Horas } from "@/lib/helpers/formatters/fechas-hora/formatearAFormato12Horas";
 
 const TomarAsistenciaPersonal = () => {
-
   const [
     showFullScreenModalAsistenciaPersonal,
     setShowFullScreenModalAsistenciaPersonal,
