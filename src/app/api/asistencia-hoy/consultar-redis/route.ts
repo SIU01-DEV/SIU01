@@ -13,8 +13,6 @@ import {
 import { Meses } from "@/interfaces/shared/Meses";
 import { determinarTipoAsistencia } from "../_helpers/determinarTipoAsistencia";
 import { EstadosAsistencia } from "@/interfaces/shared/EstadosAsistenciaEstudiantes"; // 👈 IMPORTAR EL ENUM
-// import { ENTORNO } from "@/constants/ENTORNO";
-// import { Entorno } from "@/interfaces/shared/Entornos";
 
 export async function GET(req: NextRequest) {
   try {
