@@ -5,6 +5,7 @@ import IndexedDBConnection from "../../IndexedDBConnection";
 import { ModoRegistro } from "@/interfaces/shared/ModoRegistroPersonal";
 import {
   ConsultarAsistenciasDiariasPorActorEnRedisResponseBody,
+  DetallesAsistenciaUnitariaPersonal,
   RegistroAsistenciaUnitariaPersonal,
 } from "../../../../../../interfaces/shared/AsistenciaRequests";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
@@ -294,30 +295,30 @@ export class AsistenciaDePersonalIDB {
 
     if (registroEntrada && registroEntrada.registros) {
       const diasEntrada = Object.keys(registroEntrada.registros)
-        .map(d => parseInt(d))
-        .filter(d => !isNaN(d));
+        .map((d) => parseInt(d))
+        .filter((d) => !isNaN(d));
       ultimoDiaEntrada = diasEntrada.length > 0 ? Math.max(...diasEntrada) : 0;
     }
 
     if (registroSalida && registroSalida.registros) {
       const diasSalida = Object.keys(registroSalida.registros)
-        .map(d => parseInt(d))
-        .filter(d => !isNaN(d));
+        .map((d) => parseInt(d))
+        .filter((d) => !isNaN(d));
       ultimoDiaSalida = diasSalida.length > 0 ? Math.max(...diasSalida) : 0;
     }
 
     const ultimoDiaLocal = Math.max(ultimoDiaEntrada, ultimoDiaSalida);
-    
+
     // Si el último día local es menor que el día actual - 1, necesita actualización
     // (dejamos margen de 1 día para evitar consultas constantes)
-    const necesitaActualizacion = ultimoDiaLocal < (diaActual - 1);
-    
+    const necesitaActualizacion = ultimoDiaLocal < diaActual - 1;
+
     console.log(`🔍 Verificación actualización:`, {
       ultimoDiaEntrada,
       ultimoDiaSalida,
       ultimoDiaLocal,
       diaActual,
-      necesitaActualizacion
+      necesitaActualizacion,
     });
 
     return necesitaActualizacion;
@@ -346,16 +347,27 @@ export class AsistenciaDePersonalIDB {
 
           request.onsuccess = () => {
             if (request.result) {
-              const idField = this.getIdFieldForStore(tipoPersonal, modoRegistro);
+              const idField = this.getIdFieldForStore(
+                tipoPersonal,
+                modoRegistro
+              );
               const id = request.result[idField];
-              
+
               const deleteRequest = store.delete(id);
               deleteRequest.onsuccess = () => {
-                console.log(`🗑️ Registro eliminado: ${storeName} - ${dni} - mes ${mes}`);
+                console.log(
+                  `🗑️ Registro eliminado: ${storeName} - ${dni} - mes ${mes}`
+                );
                 resolve();
               };
               deleteRequest.onerror = (event) => {
-                reject(new Error(`Error al eliminar registro: ${(event.target as IDBRequest).error}`));
+                reject(
+                  new Error(
+                    `Error al eliminar registro: ${
+                      (event.target as IDBRequest).error
+                    }`
+                  )
+                );
               };
             } else {
               resolve(); // No hay registro que eliminar
@@ -363,7 +375,13 @@ export class AsistenciaDePersonalIDB {
           };
 
           request.onerror = (event) => {
-            reject(new Error(`Error al buscar registro para eliminar: ${(event.target as IDBRequest).error}`));
+            reject(
+              new Error(
+                `Error al buscar registro para eliminar: ${
+                  (event.target as IDBRequest).error
+                }`
+              )
+            );
           };
         } catch (error) {
           reject(error);
@@ -851,21 +869,37 @@ export class AsistenciaDePersonalIDB {
         );
 
         if (necesitaActualizacion) {
-          console.log(`🔄 Datos locales desactualizados para mes ${mes}, consultando API...`);
-          
+          console.log(
+            `🔄 Datos locales desactualizados para mes ${mes}, consultando API...`
+          );
+
           // Hacer petición a la API para obtener datos actualizados
-          const asistenciaAPI = await this.consultarAsistenciasMensualesAPI(rol, dni, mes);
-          
+          const asistenciaAPI = await this.consultarAsistenciasMensualesAPI(
+            rol,
+            dni,
+            mes
+          );
+
           if (asistenciaAPI) {
             // Eliminar registros locales antiguos
             await Promise.all([
-              this.eliminarRegistroMensual(tipoPersonal, ModoRegistro.Entrada, dni, mes),
-              this.eliminarRegistroMensual(tipoPersonal, ModoRegistro.Salida, dni, mes),
+              this.eliminarRegistroMensual(
+                tipoPersonal,
+                ModoRegistro.Entrada,
+                dni,
+                mes
+              ),
+              this.eliminarRegistroMensual(
+                tipoPersonal,
+                ModoRegistro.Salida,
+                dni,
+                mes
+              ),
             ]);
 
             // Actualizar datos locales con la información más reciente
             await this.procesarYGuardarAsistenciaDesdeAPI(asistenciaAPI);
-            
+
             // Obtener los registros actualizados
             const [nuevaEntrada, nuevaSalida] = await Promise.all([
               this.obtenerRegistroMensual(
@@ -1033,12 +1067,24 @@ export class AsistenciaDePersonalIDB {
     try {
       const tipoPersonal = this.obtenerTipoPersonalDesdeRolOActor(rol);
 
-      console.log(`🔄 Forzando actualización desde API para ${rol} ${dni} - mes ${mes}...`);
+      console.log(
+        `🔄 Forzando actualización desde API para ${rol} ${dni} - mes ${mes}...`
+      );
 
       // Eliminar registros locales existentes
       await Promise.all([
-        this.eliminarRegistroMensual(tipoPersonal, ModoRegistro.Entrada, dni, mes),
-        this.eliminarRegistroMensual(tipoPersonal, ModoRegistro.Salida, dni, mes),
+        this.eliminarRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Entrada,
+          dni,
+          mes
+        ),
+        this.eliminarRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Salida,
+          dni,
+          mes
+        ),
       ]);
 
       // Consultar API y guardar
@@ -1077,21 +1123,24 @@ export class AsistenciaDePersonalIDB {
       } = datos;
 
       const tipoPersonal = this.obtenerTipoPersonalDesdeRolOActor(rol);
-      const fecha = new Date(Detalles!.Timestamp);
+      const fecha = new Date(
+        (Detalles as DetallesAsistenciaUnitariaPersonal)!.Timestamp
+      );
       const mes = fecha.getMonth() + 1;
 
       // Calcular el día escolar del mes
       const diaEscolar = this.calcularDiaEscolarDelMes();
 
       const estado = this.determinarEstadoAsistencia(
-        Detalles!.DesfaseSegundos,
+        (Detalles as DetallesAsistenciaUnitariaPersonal)!.DesfaseSegundos,
         modoRegistro
       );
 
       const registro: RegistroEntradaSalida = {
-        timestamp: Detalles!.Timestamp,
+        timestamp: (Detalles as DetallesAsistenciaUnitariaPersonal)!.Timestamp,
         estado: estado,
-        desfaseSegundos: Detalles!.DesfaseSegundos,
+        desfaseSegundos: (Detalles as DetallesAsistenciaUnitariaPersonal)!
+          .DesfaseSegundos,
       };
 
       // PASO 1: Verificar si ya existe un registro mensual en local
@@ -1271,8 +1320,12 @@ export class AsistenciaDePersonalIDB {
             Rol: datosRedis.Actor,
             Dia: diaActual,
             Detalles: resultado.Detalles && {
-              Timestamp: resultado.Detalles.Timestamp,
-              DesfaseSegundos: resultado.Detalles.DesfaseSegundos,
+              Timestamp: (
+                resultado.Detalles as DetallesAsistenciaUnitariaPersonal
+              ).Timestamp,
+              DesfaseSegundos: (
+                resultado.Detalles as DetallesAsistenciaUnitariaPersonal
+              ).DesfaseSegundos,
             },
             esNuevoRegistro: true,
           };
