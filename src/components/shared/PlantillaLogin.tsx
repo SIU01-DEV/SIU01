@@ -28,6 +28,10 @@ export type RolForLogin =
   | "RESPONSABLE(Padre/Apoderado)"
   | "PERSONAL ADMINISTRATIVO";
 
+export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY =
+  "toltip-tomar-asistencia-personal-SHOWED";
+export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR = "false";
+
 export interface FormularioLogin {
   Nombre_Usuario: string;
   Contraseña: string;
@@ -118,6 +122,15 @@ const PlantillaLogin = ({ rol, siasisAPI, endpoint }: PlantillaLoginProps) => {
 
       //Sincronizando las modificaciones de tablas
       await new UltimaModificacionTablasIDB(siasisAPI).sync(true);
+
+      //SIEMPRE EN CUANDO SE TRATE DE UN PERSONAL
+      if (rol !== "DIRECTIVO" && rol !== "RESPONSABLE(Padre/Apoderado)") {
+        //GUARDANDO VARIABLE DE MUESTRA DE TOOLTIP
+        sessionStorage.setItem(
+          SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY,
+          SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR
+        );
+      }
 
       // setTimeout(() => {
       window.location.href = "/";
@@ -211,8 +224,6 @@ const PlantillaLogin = ({ rol, siasisAPI, endpoint }: PlantillaLoginProps) => {
                   <Loader className="w-[1.5rem] bg-white p-[0.3rem]" />
                 )}
               </button>
-
-            
             </form>
           </div>
 
