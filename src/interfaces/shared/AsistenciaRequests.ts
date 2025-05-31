@@ -89,3 +89,4 @@ export interface RegistroEntradaSalidaPersonal {
   desfaseSegundos: number;
   estado: EstadosAsistenciaPersonal;
 }
+

@@ -4,7 +4,8 @@ import { LogoutTypes, ErrorDetailsForLogout } from "@/interfaces/LogoutTypes";
 import IndexedDBConnection from "../../IndexedDBConnection";
 import { ModoRegistro } from "@/interfaces/shared/ModoRegistroPersonal";
 import {
-  ConsultarAsistenciasDiariasPorActorEnRedisResponseBody,
+  AsistenciaDiariaResultado,
+  ConsultarAsistenciasTomadasPorActorEnRedisResponseBody,
   DetallesAsistenciaUnitariaPersonal,
   RegistroAsistenciaUnitariaPersonal,
 } from "../../../../../../interfaces/shared/AsistenciaRequests";
@@ -30,6 +31,10 @@ import {
 } from "@/constants/MINUTOS_TOLERANCIA_ASISTENCIA_PERSONAL";
 import { EstadosAsistenciaPersonal } from "@/interfaces/shared/EstadosAsistenciaPersonal";
 import { DIA_ESCOLAR_MINIMO_PARA_CONSULTAR_API } from "@/constants/DISPONIBILLIDAD_IDS_RDP02_GENERADOS";
+import {
+  AsistenciaCompletaMensualDePersonal,
+  GetAsistenciaMensualDePersonalSuccessResponse,
+} from "@/interfaces/shared/apis/api01/personal/types";
 
 // Re-exportar para acceso externo
 export { ModoRegistro } from "@/interfaces/shared/ModoRegistroPersonal";
@@ -55,39 +60,6 @@ export enum TipoPersonal {
   PROFESOR_SECUNDARIA = "profesor_secundaria",
   AUXILIAR = "auxiliar",
   PERSONAL_ADMINISTRATIVO = "personal_administrativo",
-}
-
-// Interface para respuesta de la API de asistencias mensuales
-export interface AsistenciaCompletaMensualDePersonal {
-  Id_Registro_Mensual_Entrada: number;
-  Id_Registro_Mensual_Salida: number;
-  DNI_Usuario: string;
-  Rol: RolesSistema;
-  Nombres: string;
-  Apellidos: string;
-  Genero: string;
-  Entradas: Record<
-    string,
-    {
-      Timestamp: number | null;
-      DesfaseSegundos: number | null;
-    }
-  >;
-  Salidas: Record<
-    string,
-    {
-      Timestamp: number | null;
-      DesfaseSegundos: number | null;
-    }
-  >;
-  Mes: Meses;
-}
-
-// Interface para respuesta exitosa de obtener asistencias mensuales
-export interface GetAsistenciaMensualDePersonalSuccessResponse {
-  success: true;
-  data: AsistenciaCompletaMensualDePersonal;
-  message: string;
 }
 
 export class AsistenciaDePersonalIDB {
@@ -1267,7 +1239,7 @@ export class AsistenciaDePersonalIDB {
    * Sincroniza las asistencias registradas en Redis con la base de datos local IndexedDB
    */
   public async sincronizarAsistenciasDesdeRedis(
-    datosRedis: ConsultarAsistenciasDiariasPorActorEnRedisResponseBody
+    datosRedis: ConsultarAsistenciasTomadasPorActorEnRedisResponseBody
   ): Promise<{
     totalRegistros: number;
     registrosNuevos: number;
@@ -1275,7 +1247,8 @@ export class AsistenciaDePersonalIDB {
     errores: number;
   }> {
     const stats = {
-      totalRegistros: datosRedis.Resultados.length,
+      totalRegistros: (datosRedis.Resultados as AsistenciaDiariaResultado[])
+        .length,
       registrosNuevos: 0,
       registrosExistentes: 0,
       errores: 0,
@@ -1299,7 +1272,7 @@ export class AsistenciaDePersonalIDB {
         };
       }
 
-      for (const resultado of datosRedis.Resultados) {
+      for (const resultado of datosRedis.Resultados as AsistenciaDiariaResultado[]) {
         try {
           const registroExistente = await this.verificarSiExisteRegistroDiario(
             tipoPersonal,
@@ -1350,7 +1323,8 @@ export class AsistenciaDePersonalIDB {
         actor: datosRedis.Actor,
         modoRegistro: datosRedis.ModoRegistro,
         mes: datosRedis.Mes,
-        totalRegistros: datosRedis.Resultados.length,
+        totalRegistros: (datosRedis.Resultados as AsistenciaDiariaResultado[])
+          .length,
       });
 
       return {
