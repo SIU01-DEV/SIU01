@@ -19,6 +19,8 @@ import { ResponseSuccessLogin } from "@/interfaces/shared/apis/shared/login/type
 import { MisDatosErrorResponseAPI01 } from "@/interfaces/shared/apis/api01/mis-datos/types";
 import { Link } from "next-view-transitions";
 import UltimaModificacionTablasIDB from "@/lib/utils/local/db/models/UltimaModificacionTablasIDB";
+import { IndexedDBConnection } from "@/lib/utils/local/db/IndexedDBConnection";
+import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 
 export type RolForLogin =
   | "DIRECTIVO"
@@ -75,6 +77,7 @@ const PlantillaLogin = ({ rol, siasisAPI, endpoint }: PlantillaLoginProps) => {
       [e.target.name]: e.target.value,
     });
   };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -114,18 +117,21 @@ const PlantillaLogin = ({ rol, siasisAPI, endpoint }: PlantillaLoginProps) => {
         throw new Error(message);
       }
 
-      //Guadando data en IndexedDB
+      // Guardar rol del usuario en la propiedad estática Y localStorage automáticamente
+      IndexedDBConnection.rol = data.Rol as RolesSistema;
+
+      // Guardando data en IndexedDB
       await userStorage.saveUserData({
         ...data,
         ultimaSincronizacionTablas: Date.now(),
       });
 
-      //Sincronizando las modificaciones de tablas
+      // Sincronizando las modificaciones de tablas
       await new UltimaModificacionTablasIDB(siasisAPI).sync(true);
 
-      //SIEMPRE EN CUANDO SE TRATE DE UN PERSONAL
+      // SIEMPRE EN CUANDO SE TRATE DE UN PERSONAL
       if (rol !== "DIRECTIVO" && rol !== "RESPONSABLE(Padre/Apoderado)") {
-        //GUARDANDO VARIABLE DE MUESTRA DE TOOLTIP
+        // GUARDANDO VARIABLE DE MUESTRA DE TOOLTIP
         sessionStorage.setItem(
           SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY,
           SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR

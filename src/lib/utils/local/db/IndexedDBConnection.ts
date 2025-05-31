@@ -1,10 +1,13 @@
+import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { CLN01_Stores } from "./CLN01_Stores";
 
 export class IndexedDBConnection {
   private static instance: IndexedDBConnection;
   private db: IDBDatabase | null = null;
-  // private dbName: string = `CLN01-SIASIS-${ENTORNO}-`;
-  private dbName: string = "AsistenciaSystem";
+  
+  // Propiedad estática que se inicializa de forma inteligente
+  private static _rol: RolesSistema | null = null;
+  
   // Usamos la variable de entorno para la versión
   private dbVersionString: string =
     process.env.NEXT_PUBLIC_CLN01_VERSION || "1.0.0";
@@ -18,6 +21,58 @@ export class IndexedDBConnection {
   }
 
   /**
+   * Getter para el rol que se auto-inicializa desde localStorage si es necesario
+   */
+  public static get rol(): RolesSistema {
+    // Si no está seteado, intentar cargar desde localStorage
+    if (!IndexedDBConnection._rol) {
+      IndexedDBConnection._rol = IndexedDBConnection.loadRolFromStorage();
+    }
+    return IndexedDBConnection._rol;
+  }
+
+  /**
+   * Setter para el rol que también lo guarda en localStorage
+   */
+  public static set rol(newRol: RolesSistema) {
+    IndexedDBConnection._rol = newRol;
+    // Guardar en localStorage si estamos en el cliente
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem("rol", newRol);
+    }
+  }
+
+  /**
+   * Carga el rol desde localStorage de forma segura
+   */
+  private static loadRolFromStorage(): RolesSistema {
+    // Verificar si estamos en el cliente
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const storedRole = localStorage.getItem("rol") as RolesSistema;
+      if (storedRole && Object.values(RolesSistema).includes(storedRole)) {
+        return storedRole;
+      }
+    }
+    // Valor por defecto si no hay nada en localStorage o no es válido
+    return RolesSistema.Directivo;
+  }
+
+  /**
+   * Obtiene el nombre de la base de datos basado en el rol actual
+   */
+  private get dbName(): string {
+    return `SIASIS-CLN01-${IndexedDBConnection.rol}`;
+  }
+
+  /**
+   * Fuerza la recarga del rol desde localStorage
+   * Útil cuando sabes que el rol cambió externamente
+   */
+  public static reloadRolFromStorage(): void {
+    IndexedDBConnection._rol = IndexedDBConnection.loadRolFromStorage();
+  }
+
+  /**
    * Obtiene la instancia única de conexión a IndexedDB
    */
   public static getInstance(): IndexedDBConnection {
@@ -28,9 +83,33 @@ export class IndexedDBConnection {
   }
 
   /**
+   * Cambia el rol y reinicializa la conexión a la BD correspondiente
+   */
+  public async changeRole(newRole: RolesSistema): Promise<void> {
+    const currentRole = IndexedDBConnection.rol;
+    
+    // Si es el mismo rol, no hacer nada
+    if (currentRole === newRole) return;
+    
+    // Cerrar la conexión actual
+    this.close();
+    
+    // Cambiar el rol (esto automáticamente actualiza localStorage)
+    IndexedDBConnection.rol = newRole;
+    
+    // Reinicializar con la nueva base de datos
+    await this.init();
+  }
+
+  /**
    * Inicializa la conexión a la base de datos
    */
   public async init(): Promise<IDBDatabase> {
+    // Verificar que estamos en el cliente
+    if (typeof window === 'undefined') {
+      throw new Error('IndexedDB solo está disponible en el navegador');
+    }
+
     if (this.db) return this.db;
     if (this.initPromise) return this.initPromise;
 
@@ -41,7 +120,7 @@ export class IndexedDBConnection {
       const request = indexedDB.open(this.dbName, this.version);
 
       request.onupgradeneeded = (event) => {
-        console.log(`Actualizando base de datos a versión ${this.version}`);
+        console.log(`Actualizando base de datos a versión ${this.version} para rol ${IndexedDBConnection.rol}`);
         const db = (event.target as IDBOpenDBRequest).result;
 
         // Si hay stores existentes que ya no necesitamos, los eliminamos
@@ -59,7 +138,7 @@ export class IndexedDBConnection {
         this.db = (event.target as IDBOpenDBRequest).result;
         this.isInitializing = false;
         console.log(
-          `Base de datos inicializada correctamente con versión ${this.version}`
+          `Base de datos inicializada correctamente con versión ${this.version} para rol ${IndexedDBConnection.rol}`
         );
         resolve(this.db);
       };
@@ -184,6 +263,18 @@ export class IndexedDBConnection {
         reject(`Error en operación: ${(event.target as IDBRequest).error}`);
       };
     });
+  }
+
+  /**
+   * Obtiene información del estado actual
+   */
+  public getStatus() {
+    return {
+      currentRole: IndexedDBConnection.rol,
+      dbName: this.dbName,
+      isConnected: !!this.db,
+      isInitializing: this.isInitializing
+    };
   }
 }
 

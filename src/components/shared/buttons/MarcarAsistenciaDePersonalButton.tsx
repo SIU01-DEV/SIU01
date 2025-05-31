@@ -45,9 +45,26 @@ const MarcarAsistenciaDePersonalButton = () => {
     if (!tooltipMostrado || tooltipMostrado === "false") {
       setMostrarTooltip(true);
     }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        volverAMostrarTooltip();
+      }
+    });
+    
   }, []);
 
   // Función para ocultar el tooltip y guardarlo en sessionStorage
+  const volverAMostrarTooltip = () => {
+    setMostrarTooltip(true);
+    sessionStorage.setItem(
+      SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY,
+      "false"
+    );
+  };
+
+
+    // Función para ocultar el tooltip y guardarlo en sessionStorage
   const ocultarTooltip = () => {
     setMostrarTooltip(false);
     sessionStorage.setItem(
@@ -55,6 +72,7 @@ const MarcarAsistenciaDePersonalButton = () => {
       "true"
     );
   };
+
 
   // Función para manejar el click del botón
   const handleClick = () => {
