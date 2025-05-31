@@ -18,7 +18,11 @@ import { FechaHoraActualRealState } from "@/global/state/others/fechaHoraActualR
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { ActoresSistema } from "@/interfaces/shared/ActoresSistema";
 import { Loader2 } from "lucide-react";
-import { ConsultarAsistenciasDiariasPorActorEnRedisResponseBody } from "@/interfaces/shared/AsistenciaRequests";
+import {
+  AsistenciaDiariaResultado,
+  ConsultarAsistenciasTomadasPorActorEnRedisResponseBody,
+  TipoAsistencia,
+} from "@/interfaces/shared/AsistenciaRequests";
 import { ErrorResponseAPIBase } from "@/interfaces/shared/apis/types";
 
 // Obtener texto según el rol
@@ -101,12 +105,12 @@ export const ListaPersonal = ({
 
         // Consultar las asistencias ya registradas
         const response = await fetch(
-          `/api/asistencia-hoy/consultar-redis?Actor=${actorParam}&ModoRegistro=${modoRegistro}`
+          `/api/asistencia-hoy/consultar-asistencias-tomadas?TipoAsistencia=${TipoAsistencia.ParaPersonal}&Actor=${actorParam}&ModoRegistro=${modoRegistro}`
         );
 
         if (response.ok) {
           const data =
-            (await response.json()) as ConsultarAsistenciasDiariasPorActorEnRedisResponseBody;
+            (await response.json()) as ConsultarAsistenciasTomadasPorActorEnRedisResponseBody;
 
           // Sincronizar con IndexedDB usando la nueva instancia
           const statsSync =
@@ -117,7 +121,9 @@ export const ListaPersonal = ({
           console.log("Estadísticas de sincronización:", statsSync);
 
           // Extraer los DNIs de las personas que ya han marcado asistencia
-          const dnis = data.Resultados.map((resultado) => resultado.DNI);
+          const dnis = (data.Resultados as AsistenciaDiariaResultado[]).map(
+            (resultado) => resultado.DNI
+          );
           setAsistenciasMarcadas(dnis);
         } else {
           console.error("Error al cargar asistencias:", await response.text());
@@ -176,6 +182,7 @@ export const ListaPersonal = ({
         body: JSON.stringify({
           DNI: personal.DNI,
           Actor: rol,
+          TipoAsistencia: TipoAsistencia.ParaPersonal,
           ModoRegistro: modoRegistro,
           FechaHoraEsperadaISO: horaEsperadaISO, // String ISO directo del JSON
         } as RegistrarAsistenciaIndividualRequestBody),

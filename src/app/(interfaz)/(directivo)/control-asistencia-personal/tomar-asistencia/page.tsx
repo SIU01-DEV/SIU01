@@ -121,7 +121,6 @@ const TomarAsistenciaPersonal = () => {
         await new DatosAsistenciaHoyIDB().obtenerEstadoTomaAsistencia(
           TipoAsistencia.ParaPersonal
         );
-      console.log("HOLAAA", estadoTomaAsistenciaDePersonalActual);
       setEstadoTomaAsistenciaDePersonal(estadoTomaAsistenciaDePersonalActual);
     };
     obtenerEstadoAsistencia();
@@ -276,22 +275,6 @@ const TomarAsistenciaPersonal = () => {
           fechaConclusion: eventoInfo.Fecha_Conclusion,
         };
       }
-      // Si no estamos en el rango del evento, continuamos con la verificación de fin de semana
-    }
-
-    // Si estamos en proceso de registro, permanecemos en ese estado
-    if (estadoTomaAsistenciaDePersonal?.AsistenciaIniciada) {
-      return {
-        estado: "en_proceso",
-        mensaje: "Registro en proceso",
-        descripcion: "El registro de asistencia está siendo procesado.",
-        tiempoRestante: null,
-        botonActivo: !showFullScreenModalAsistenciaPersonal,
-        colorEstado: "bg-green-100",
-        mostrarContadorPersonal: true,
-        etiquetaPersonal: "Personal pendiente",
-        iconoPersonal: "reloj",
-      };
     }
 
     // Si estamos sincronizando
@@ -339,6 +322,7 @@ const TomarAsistenciaPersonal = () => {
         mostrarContadorPersonal: false,
       };
     }
+
     // Verificamos si la fecha de datos de asistencia es de un día anterior
     const fechaActual = new Date(fechaHoraActual.fechaHora!);
     const fechaDatosAsistencia = new Date(
@@ -359,6 +343,9 @@ const TomarAsistenciaPersonal = () => {
       };
     }
 
+    // VERIFICAR HORARIOS ANTES QUE EL ESTADO DE PROCESO
+
+    // Si aún no es hora de inicio
     if (
       tiempoRestanteParaInicioAsistencia &&
       !tiempoRestanteParaInicioAsistencia.yaVencido
@@ -408,7 +395,23 @@ const TomarAsistenciaPersonal = () => {
       };
     }
 
-    // Si estamos en horario válido para tomar asistencia
+    // AHORA SÍ VERIFICAMOS EL ESTADO DE PROCESO
+    // Solo si estamos dentro del horario válido y no hay restricciones
+    if (estadoTomaAsistenciaDePersonal?.AsistenciaIniciada) {
+      return {
+        estado: "en_proceso",
+        mensaje: "Registro en proceso",
+        descripcion: "El registro de asistencia está siendo procesado.",
+        tiempoRestante: null,
+        botonActivo: !showFullScreenModalAsistenciaPersonal,
+        colorEstado: "bg-green-100",
+        mostrarContadorPersonal: true,
+        etiquetaPersonal: "Personal pendiente",
+        iconoPersonal: "reloj",
+      };
+    }
+
+    // Si estamos en horario válido para tomar asistencia (estado por defecto)
     return {
       estado: "disponible",
       mensaje: "Sistema listo para registro",
@@ -427,7 +430,6 @@ const TomarAsistenciaPersonal = () => {
       tiempoDisponible: tiempoRestanteParaCierreAsistencia.formateado,
     };
   };
-
   // Obtener el estado actual
   const estadoSistema = determinarEstadoSistema();
 

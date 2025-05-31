@@ -43,10 +43,10 @@ export interface AsistenciaDiariaResultado {
     | null;
 }
 
-export interface ConsultarAsistenciasDiariasPorActorEnRedisResponseBody {
+export interface ConsultarAsistenciasTomadasPorActorEnRedisResponseBody {
   Actor: ActoresSistema;
   ModoRegistro: ModoRegistro;
-  Resultados: AsistenciaDiariaResultado[];
+  Resultados: AsistenciaDiariaResultado | AsistenciaDiariaResultado[];
   Mes: Meses;
   Dia: number;
 }

@@ -24,7 +24,7 @@ import { ENTORNO } from "@/constants/ENTORNO";
 import { Entorno } from "@/interfaces/shared/Entornos";
 
 // 🔧 CONSTANTE DE CONFIGURACIÓN PARA DESARROLLO
-const CONSIDERAR_DIAS_NO_ESCOLARES = true; // false = solo días laborales, true = incluir sábados y domingos
+const CONSIDERAR_DIAS_NO_ESCOLARES = false; // false = solo días laborales, true = incluir sábados y domingos
 
 // Interfaces
 interface EventoAPI {

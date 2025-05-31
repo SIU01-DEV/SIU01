@@ -31,6 +31,8 @@ import { Genero } from "@/interfaces/shared/Genero";
 import { RolesTextos } from "@/Assets/RolesTextos";
 import { ZONA_HORARIA_LOCAL } from "@/constants/ZONA_HORARIA_LOCAL";
 import { DatosAsistenciaHoyIDB } from "@/lib/utils/local/db/models/DatosAsistenciaHoy/DatosAsistenciaHoyIDB";
+import { Entorno } from "@/interfaces/shared/Entornos";
+import { ENTORNO } from "../../../constants/ENTORNO";
 
 /**
  * Componente Header - Barra superior con información del usuario y controles del sidebar
@@ -54,9 +56,11 @@ const Header = ({
     (state: RootState) => state.flags.sidebarIsOpen
   );
   const { delegarEvento } = useDelegacionEventos();
-  const { sincronizarConServidor, inicializado } = useFechaHoraReal({
-    timezone: ZONA_HORARIA_LOCAL,
-  });
+  const { sincronizarConServidor, inicializado, formateada } = useFechaHoraReal(
+    {
+      timezone: ZONA_HORARIA_LOCAL,
+    }
+  );
 
   // Estados
   const [menuVisible, setMenuVisible] = useState(false);
@@ -193,7 +197,13 @@ const Header = ({
         <LogoCabecera />
       </div>
 
-      <div className="flex-1"></div>
+      <div className="flex-1">
+        {ENTORNO === Entorno.LOCAL && (
+          <>
+            {formateada?.fechaCorta} | {formateada?.horaAmPm}
+          </>
+        )}
+      </div>
 
       {/* Información del usuario y menú */}
       <div
