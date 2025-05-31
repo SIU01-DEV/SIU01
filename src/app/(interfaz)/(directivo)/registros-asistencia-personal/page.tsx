@@ -758,7 +758,7 @@ const RegistrosAsistenciaDePersonal = () => {
   return (
     <div className="p-4 lg-only:p-6">
       {/* 🔧 BANNER DE DESARROLLO cuando está activado el modo días no escolares */}
-      {CONSIDERAR_DIAS_NO_ESCOLARES && (
+      {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-4">
           <div className="flex items-center">
             <span className="text-lg mr-2">⚠️</span>
@@ -906,7 +906,7 @@ const RegistrosAsistenciaDePersonal = () => {
           </p>
           <p className="text-xs text-gris-intermedio mt-1">
             Total de registros: {registros.length}{" "}
-            {CONSIDERAR_DIAS_NO_ESCOLARES
+            {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL
               ? "(todos los días hasta la fecha actual)"
               : "(solo días laborables hasta la fecha actual)"}
           </p>
@@ -1231,7 +1231,7 @@ const RegistrosAsistenciaDePersonal = () => {
               <span className="font-medium">Nota:</span> Los estados se calculan
               automáticamente según la diferencia entre el horario programado y
               el horario real de entrada/salida registrado en el sistema.
-              {CONSIDERAR_DIAS_NO_ESCOLARES && (
+              {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL && (
                 <span className="block mt-1">
                   <span className="font-medium">Desarrollo:</span> Los registros
                   con fondo azul claro corresponden a fines de semana.
