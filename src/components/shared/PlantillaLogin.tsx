@@ -21,6 +21,10 @@ import { Link } from "next-view-transitions";
 import UltimaModificacionTablasIDB from "@/lib/utils/local/db/models/UltimaModificacionTablasIDB";
 import { IndexedDBConnection } from "@/lib/utils/local/db/IndexedDBConnection";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
+import {
+  SE_MOSTRARON_COMUNICADOS_DE_HOY_KEY,
+  SE_MOSTRARON_COMUNICADOS_DE_HOY_VALOR_INICIAL,
+} from "../modals/Comunicados/ComunicadosDeHoy";
 
 export type RolForLogin =
   | "DIRECTIVO"
@@ -32,7 +36,7 @@ export type RolForLogin =
 
 export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY =
   "toltip-tomar-asistencia-personal-SHOWED";
-export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR = "false";
+export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR_INICIAL = "false";
 
 export interface FormularioLogin {
   Nombre_Usuario: string;
@@ -129,12 +133,18 @@ const PlantillaLogin = ({ rol, siasisAPI, endpoint }: PlantillaLoginProps) => {
       // Sincronizando las modificaciones de tablas
       await new UltimaModificacionTablasIDB(siasisAPI).sync(true);
 
+      //CADA VES QUE SE INICIE SESION, SE DEBE MOSTRAR LOS COMUNICADOS DEL DIA DE HOY
+      sessionStorage.setItem(
+        SE_MOSTRARON_COMUNICADOS_DE_HOY_KEY,
+        SE_MOSTRARON_COMUNICADOS_DE_HOY_VALOR_INICIAL
+      );
+
       // SIEMPRE EN CUANDO SE TRATE DE UN PERSONAL
       if (rol !== "DIRECTIVO" && rol !== "RESPONSABLE(Padre/Apoderado)") {
         // GUARDANDO VARIABLE DE MUESTRA DE TOOLTIP
         sessionStorage.setItem(
           SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY,
-          SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR
+          SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR_INICIAL
         );
       }
 

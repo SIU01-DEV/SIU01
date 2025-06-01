@@ -28,7 +28,6 @@ const PlantillaDirectivo = ({
       />
       <div className="w-full -border-2 border-green-900 flex relative top-0 ">
         <SidebarDirectivo />
-
         <main className="-border-2 border-black flex-1 h-full py-4 px-8 flex items-center justify-center">
           {children}
         </main>

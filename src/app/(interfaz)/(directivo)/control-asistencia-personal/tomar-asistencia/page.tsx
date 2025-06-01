@@ -47,7 +47,7 @@ const TomarAsistenciaPersonal = () => {
     useState<EstadoTomaAsistenciaResponseBody | null>(null);
   const [modoFinDeSemana, setModoFinDeSemana] = useState(false);
 
-  const fetchDataAsistence = async () => {
+  const getDataAsistence = async () => {
     setSincronizando(true);
     setHandlerDatosAsistenciaHoyDirectivo(null);
 
@@ -74,7 +74,7 @@ const TomarAsistenciaPersonal = () => {
   useEffect(() => {
     if (!fechaHoraActual.inicializado) return;
 
-    fetchDataAsistence();
+    getDataAsistence();
   }, [fechaHoraActual.inicializado]);
 
   // Efecto para verificar si necesitamos actualizar los datos cuando cambia el día
@@ -107,7 +107,7 @@ const TomarAsistenciaPersonal = () => {
       !handlerDatosAsistenciaHoyDirectivo.esHoyDiaDeEvento()
     ) {
       console.log("Detectado cambio de día, actualizando datos...");
-      fetchDataAsistence();
+      getDataAsistence();
     }
   }, [
     haySincronizacionDatos,
