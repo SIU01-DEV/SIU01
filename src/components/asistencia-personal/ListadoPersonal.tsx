@@ -24,6 +24,8 @@ import {
   TipoAsistencia,
 } from "@/interfaces/shared/AsistenciaRequests";
 import { ErrorResponseAPIBase } from "@/interfaces/shared/apis/types";
+import { useSelector } from "react-redux";
+import { RootState } from "@/global/store";
 
 // Obtener texto según el rol
 export const obtenerTextoRol = (rol: RolesSistema): string => {
@@ -55,21 +57,31 @@ export const ListaPersonal = ({
 }) => {
   const { toast } = useToast();
   const [procesando, setProcesando] = useState<string | null>(null);
-  const [asistenciasMarcadas, setAsistenciasMarcadas] = useState<string[]>([]);
   const [cargandoAsistencias, setCargandoAsistencias] = useState(true);
+  const [eliminandoAsistencia, setEliminandoAsistencia] = useState<
+    string | null
+  >(null);
+
+  // ✅ NUEVO: Obtener timestamp actual de Redux
+  const fechaHoraRedux = useSelector(
+    (state: RootState) => state.others.fechaHoraActualReal
+  );
+  const timestampActual = fechaHoraRedux.utilidades?.timestamp;
+
+  // ✅ NUEVO: Estado para almacenar las asistencias registradas por DNI
+  const [asistenciasRegistradas, setAsistenciasRegistradas] = useState<
+    Map<string, AsistenciaDiariaResultado>
+  >(new Map());
 
   // Estados para el sistema de manejo de errores
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ErrorResponseAPIBase | null>(null);
 
-  // Crear instancia de AsistenciaDePersonalIDB con el constructor actualizado
+  // ✅ MODIFICADO: Crear instancia SIN el callback
   const asistenciaDePersonalIDB = new AsistenciaDePersonalIDB(
     "API01",
     setIsLoading,
-    setError,
-    (message) => {
-      console.log("Mensaje de éxito:", message);
-    }
+    setError
   );
 
   // Obtenemos los datos del personal
@@ -77,7 +89,93 @@ export const ListaPersonal = ({
     ? handlerDatosAsistenciaHoyDirectivo.obtenerPersonalPorRol(rol)
     : [];
 
-  // Cargar las asistencias ya registradas
+  // Manejar eliminación de asistencia CON FEEDBACK DE VOZ
+  const handleEliminarAsistencia = async (
+    personal: PersonalParaTomarAsistencia
+  ) => {
+    if (eliminandoAsistencia !== null) return;
+
+    try {
+      setEliminandoAsistencia(personal.DNI);
+
+      console.log(
+        `🗑️ Iniciando eliminación de asistencia para: ${personal.DNI}`
+      );
+
+      // Eliminar usando el modelo de IndexedDB
+      const resultado = await asistenciaDePersonalIDB.eliminarAsistencia({
+        dni: personal.DNI,
+        rol: rol,
+        modoRegistro: modoRegistro,
+      });
+
+      if (resultado.exitoso) {
+        // ✅ Actualizar el mapa de asistencias registradas (eliminar la entrada)
+        setAsistenciasRegistradas((prev) => {
+          const nuevo = new Map(prev);
+          nuevo.delete(personal.DNI);
+          return nuevo;
+        });
+
+        // 🎯 NUEVO: Feedback por voz para eliminación exitosa
+        const speaker = Speaker.getInstance();
+        speaker.start(
+          `${
+            modoRegistroTextos[modoRegistro]
+          } eliminada para ${personal.Nombres.split(
+            " "
+          ).shift()} ${personal.Apellidos.split(" ").shift()}`
+        );
+
+        console.log("✅ Eliminación exitosa, estado actualizado");
+
+        toast({
+          title: "Asistencia eliminada",
+          description: resultado.mensaje,
+          variant: "default",
+        });
+      } else {
+        // 🎯 NUEVO: Feedback por voz para error en eliminación
+        const speaker = Speaker.getInstance();
+        speaker.start(
+          `Error al eliminar ${modoRegistroTextos[
+            modoRegistro
+          ].toLowerCase()} de ${personal.Nombres.split(" ").shift()}`
+        );
+
+        toast({
+          title: "Error",
+          description: resultado.mensaje,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error al eliminar asistencia:", error);
+
+      // 🎯 NUEVO: Feedback por voz para error general
+      const speaker = Speaker.getInstance();
+      speaker.start(
+        `Error del sistema al eliminar ${modoRegistroTextos[
+          modoRegistro
+        ].toLowerCase()}`
+      );
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al eliminar asistencia";
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setEliminandoAsistencia(null);
+    }
+  };
+
+  // ✅ MODIFICADO: Cargar las asistencias ya registradas
   useEffect(() => {
     const cargarAsistenciasRegistradas = async () => {
       try {
@@ -112,24 +210,41 @@ export const ListaPersonal = ({
           const data =
             (await response.json()) as ConsultarAsistenciasTomadasPorActorEnRedisResponseBody;
 
+          console.log("🔍 Datos obtenidos de la API:", data);
+
           // Sincronizar con IndexedDB usando la nueva instancia
           const statsSync =
             await asistenciaDePersonalIDB.sincronizarAsistenciasDesdeRedis(
               data
             );
 
-          console.log("Estadísticas de sincronización:", statsSync);
+          console.log("📊 Estadísticas de sincronización:", statsSync);
 
-          // Extraer los DNIs de las personas que ya han marcado asistencia
-          const dnis = (data.Resultados as AsistenciaDiariaResultado[]).map(
-            (resultado) => resultado.DNI
-          );
-          setAsistenciasMarcadas(dnis);
+          // ✅ CORREGIDO: Crear mapa de asistencias por DNI con validación
+          const mapaAsistencias = new Map<string, AsistenciaDiariaResultado>();
+
+          // Validar si Resultados es un array o un objeto único
+          const resultados = Array.isArray(data.Resultados)
+            ? data.Resultados
+            : [data.Resultados];
+
+          resultados.forEach((resultado) => {
+            if (resultado && resultado.DNI) {
+              console.log("📝 Agregando al mapa:", resultado);
+              mapaAsistencias.set(resultado.DNI, resultado);
+            }
+          });
+
+          console.log("🗺️ Mapa final de asistencias:", mapaAsistencias);
+          setAsistenciasRegistradas(mapaAsistencias);
         } else {
-          console.error("Error al cargar asistencias:", await response.text());
+          console.error(
+            "❌ Error al cargar asistencias:",
+            await response.text()
+          );
         }
       } catch (error) {
-        console.error("Error al consultar asistencias registradas:", error);
+        console.error("❌ Error al consultar asistencias registradas:", error);
         toast({
           title: "Error",
           description: "No se pudieron cargar las asistencias registradas",
@@ -145,7 +260,7 @@ export const ListaPersonal = ({
     }
   }, [rol, modoRegistro]);
 
-  // En el manejador de persona seleccionada del componente ListaPersonal:
+  // ✅ MODIFICADO: Manejador simplificado
   const handlePersonaSeleccionada = async (
     personal: PersonalParaTomarAsistencia
   ) => {
@@ -154,7 +269,7 @@ export const ListaPersonal = ({
     setProcesando(personal.DNI);
 
     try {
-      // ✅ SÚPER SIMPLE: Obtener la hora como string ISO directamente del JSON
+      // Obtener la hora esperada como string ISO directamente del JSON
       const horaEsperadaISO =
         handlerDatosAsistenciaHoyDirectivo.obtenerHorarioPersonalISO(
           rol!,
@@ -162,9 +277,7 @@ export const ListaPersonal = ({
           modoRegistro
         );
 
-      // Debug para verificar
       console.log("🕐 Hora esperada ISO (directa del JSON):", horaEsperadaISO);
-      console.log("✅ Sin conversiones, sin problemas de zona horaria!");
 
       // Feedback por voz
       const speaker = Speaker.getInstance();
@@ -184,7 +297,7 @@ export const ListaPersonal = ({
           Actor: rol,
           TipoAsistencia: TipoAsistencia.ParaPersonal,
           ModoRegistro: modoRegistro,
-          FechaHoraEsperadaISO: horaEsperadaISO, // String ISO directo del JSON
+          FechaHoraEsperadaISO: horaEsperadaISO,
         } as RegistrarAsistenciaIndividualRequestBody),
       });
 
@@ -198,6 +311,23 @@ export const ListaPersonal = ({
       console.log("Respuesta de la API:", data);
 
       if (data.success) {
+        // ✅ NUEVO: Crear objeto AsistenciaDiariaResultado y agregarlo al mapa
+        const nuevoRegistro: AsistenciaDiariaResultado = {
+          DNI: personal.DNI,
+          AsistenciaMarcada: true,
+          Detalles: {
+            Timestamp: data.data.timestamp,
+            DesfaseSegundos: data.data.desfaseSegundos,
+          },
+        };
+
+        // Actualizar el mapa de asistencias registradas
+        setAsistenciasRegistradas((prev) => {
+          const nuevo = new Map(prev);
+          nuevo.set(personal.DNI, nuevoRegistro);
+          return nuevo;
+        });
+
         // Guardar en IndexedDB
         await asistenciaDePersonalIDB.marcarAsistencia({
           datos: {
@@ -212,9 +342,6 @@ export const ListaPersonal = ({
             },
           },
         });
-
-        // Actualizar estado
-        setAsistenciasMarcadas((prev) => [...prev, personal.DNI]);
 
         toast({
           title: "Asistencia registrada",
@@ -280,7 +407,7 @@ export const ListaPersonal = ({
 
   return (
     <div className="h-full w-full flex flex-col pb-3 px-4 sm-only:pb-4 sm-only:px-3 md-only:pb-4 md-only:px-3 lg-only:pb-4 lg-only:px-4 xl-only:pb-4 xl-only:px-4 bg-gradient-to-b from-white to-gray-50 overflow-auto">
-      {/* Encabezados fijos en la parte superior - REDUCIDOS */}
+      {/* Encabezados fijos en la parte superior - CON MENSAJE INFORMATIVO */}
       <div className="sticky top-0 bg-[#ffffffcc] [backdrop-filter:blur(10px)] py-2 sm-only:py-3 md-only:py-3 lg-only:py-3 xl-only:py-4 z-10 mb-2">
         <h2 className="text-base sm-only:text-lg md-only:text-lg lg-only:text-lg xl-only:text-xl font-bold text-blue-800 text-center leading-tight">
           {modoRegistroTextos[modoRegistro]} | {textoRol}
@@ -289,6 +416,14 @@ export const ListaPersonal = ({
         <h3 className="text-lg sm-only:text-xl md-only:text-xl lg-only:text-2xl xl-only:text-2xl font-bold text-green-600 text-center leading-tight">
           Ahora haz clic en tu nombre
         </h3>
+
+        {/* 🆕 MENSAJE INFORMATIVO SOBRE TIEMPO LÍMITE */}
+        <div className="text-center mt-1 mb-2">
+          <p className="text-xs sm-only:text-sm text-orange-600 font-medium">
+            💡 Tienes 5 minutos para cancelar una asistencia después de
+            registrarla
+          </p>
+        </div>
 
         {(cargandoAsistencias || isLoading) && (
           <p className="text-center text-blue-500 mt-1">
@@ -303,21 +438,36 @@ export const ListaPersonal = ({
       {/* Contenedor centrado para las tarjetas */}
       <div className="flex-1 flex justify-center">
         <div className="max-w-4xl w-full">
-          {/* Lista de personas con flex-wrap - TAMAÑOS REDUCIDOS */}
+          {/* Lista de personas con flex-wrap */}
           <div className="flex flex-wrap justify-center gap-2 sm-only:gap-3 md-only:gap-3 lg-only:gap-3 xl-only:gap-3">
-            {personal.map((persona) => (
-              <ItemTomaAsistencia
-                key={persona.DNI}
-                personal={persona}
-                handlePersonalSeleccionado={handlePersonaSeleccionada}
-                disabled={
-                  !cargandoAsistencias &&
-                  asistenciasMarcadas.includes(persona.DNI)
-                }
-                loading={procesando === persona.DNI}
-                globalLoading={cargandoAsistencias || isLoading}
-              />
-            ))}
+            {personal.map((persona) => {
+              // ✅ NUEVO: Obtener la asistencia registrada para esta persona
+              const asistenciaPersona = asistenciasRegistradas.get(persona.DNI);
+
+              // 🐛 DEBUG: Log para verificar datos
+              console.log(`🔍 Debug persona ${persona.DNI}:`, {
+                asistenciaPersona,
+                tieneDatos: !!asistenciaPersona,
+                asistenciaMarcada: asistenciaPersona?.AsistenciaMarcada,
+                detalles: asistenciaPersona?.Detalles,
+                timestampActual,
+                mapaCompleto: asistenciasRegistradas,
+              });
+
+              return (
+                <ItemTomaAsistencia
+                  key={persona.DNI}
+                  personal={persona}
+                  handlePersonalSeleccionado={handlePersonaSeleccionada}
+                  handleEliminarAsistencia={handleEliminarAsistencia} // ← NUEVO: Pasar función de eliminación
+                  asistenciaRegistrada={asistenciaPersona} // ← NUEVO: Pasar los datos de asistencia
+                  timestampActual={timestampActual} // ← NUEVO: Pasar timestamp de Redux
+                  loading={procesando === persona.DNI}
+                  eliminando={eliminandoAsistencia === persona.DNI} // ← NUEVO: Estado de eliminación
+                  globalLoading={cargandoAsistencias || isLoading}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

@@ -15,11 +15,16 @@ import { ErrorResponseAPIBase } from "@/interfaces/shared/apis/types";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { TipoAsistencia } from "@/interfaces/shared/AsistenciaRequests";
 import { HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS } from "@/constants/expirations";
+// import { ENTORNO } from "@/constants/ENTORNO";
+// import { Entorno } from "@/interfaces/shared/Entornos";
 
 // Función para obtener la fecha actual en Perú (UTC-5)
 const obtenerFechaActualPeru = (): string => {
+  
   const fecha = new Date();
+
   fecha.setHours(fecha.getHours() - 5); // Ajustar a hora de Perú (UTC-5)
+
   return fecha.toISOString().split("T")[0]; // Formato YYYY-MM-DD
 };
 
