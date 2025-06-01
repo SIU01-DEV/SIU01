@@ -22,17 +22,13 @@ import {
 import { convertirAFormato12Horas } from "@/lib/helpers/formatters/fechas-hora/formatearAFormato12Horas";
 import { ENTORNO } from "@/constants/ENTORNO";
 import { Entorno } from "@/interfaces/shared/Entornos";
+import {
+  EventosIDB,
+  IEventoLocal,
+} from "@/lib/utils/local/db/models/EventosIDB";
 
 // 🔧 CONSTANTE DE CONFIGURACIÓN PARA DESARROLLO
 const CONSIDERAR_DIAS_NO_ESCOLARES = false; // false = solo días laborales, true = incluir sábados y domingos
-
-// Interfaces
-interface EventoAPI {
-  Id_Evento: number;
-  Nombre: string;
-  Fecha_Inicio: string;
-  Fecha_Conclusion: string;
-}
 
 interface RegistroDia {
   fecha: string;
@@ -55,9 +51,9 @@ const RegistrosAsistenciaDePersonal = () => {
   const [dni, setDni] = useState("");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AsistenciaMensualPersonal | null>(null);
-  const [eventos, setEventos] = useState<EventoAPI[]>([]);
+  const [eventos, setEventos] = useState<IEventoLocal[]>([]);
   const [registros, setRegistros] = useState<RegistroDia[]>([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ErrorResponseAPIBase | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
 
   // Obtener fecha actual
@@ -98,9 +94,15 @@ const RegistrosAsistenciaDePersonal = () => {
         setLoading, // Conectar directamente con el estado loading
         (error: ErrorResponseAPIBase | null) => {
           if (error) {
-            setError(error.message);
+            setError({
+              success: false,
+              message: error.message,
+            });
           } else {
-            setError("");
+            setError({
+              success: false,
+              message: "",
+            });
           }
         },
         (message: MessageProperty | null) => {
@@ -124,22 +126,36 @@ const RegistrosAsistenciaDePersonal = () => {
     },
   ];
 
-  // Función para verificar si un día es evento
+  // 🔧 FUNCIÓN CORREGIDA para verificar si un día es evento
   const esEvento = (
     fecha: string
   ): { esEvento: boolean; nombreEvento?: string } => {
     const evento = eventos.find((e) => {
-      const fechaInicio = new Date(e.Fecha_Inicio);
-      const fechaFin = new Date(e.Fecha_Conclusion);
-      const fechaConsulta = new Date(fecha);
+      // ✅ CORRECCIÓN: Agregar 'T00:00:00' para evitar problemas de zona horaria
+      const fechaInicio = new Date(e.Fecha_Inicio + "T00:00:00");
+      const fechaFin = new Date(e.Fecha_Conclusion + "T00:00:00");
+      const fechaConsulta = new Date(fecha + "T00:00:00");
+
+      console.log(`🔍 Verificando evento "${e.Nombre}":`, {
+        fechaConsulta: fechaConsulta.toISOString(),
+        fechaInicio: fechaInicio.toISOString(),
+        fechaFin: fechaFin.toISOString(),
+        estaEnRango: fechaConsulta >= fechaInicio && fechaConsulta <= fechaFin,
+      });
 
       return fechaConsulta >= fechaInicio && fechaConsulta <= fechaFin;
     });
 
-    return {
+    const resultado = {
       esEvento: !!evento,
       nombreEvento: evento?.Nombre,
     };
+
+    if (resultado.esEvento) {
+      console.log(`🎉 Fecha ${fecha} ES EVENTO: "${resultado.nombreEvento}"`);
+    }
+
+    return resultado;
   };
 
   // Función para mapear estados del enum a strings para la UI
@@ -672,28 +688,20 @@ const RegistrosAsistenciaDePersonal = () => {
       setRegistros(registrosResultado);
     } catch (error) {
       console.error("Error al procesar datos:", error);
-      setError("Error al procesar los datos de asistencia");
+      setError({
+        success: false,
+        message: "Error al procesar los datos de asistencia",
+      });
     }
   };
 
   // Función para obtener eventos (mock)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const obtenerEventos = async (mes: number) => {
     try {
-      setEventos([
-        {
-          Id_Evento: 1,
-          Nombre: "Día del Trabajador",
-          Fecha_Inicio: "2025-05-01",
-          Fecha_Conclusion: "2025-05-01",
-        },
-        {
-          Id_Evento: 2,
-          Nombre: "Fiestas Patrias",
-          Fecha_Inicio: "2025-07-28",
-          Fecha_Conclusion: "2025-07-29",
-        },
-      ]);
+      const eventosIDB = new EventosIDB("API01", setLoading, setError);
+
+      const eventosDelMes = await eventosIDB.getEventosPorMes(mes);
+      setEventos(eventosDelMes);
     } catch (error) {
       console.error("Error obteniendo eventos:", error);
     }
@@ -702,11 +710,14 @@ const RegistrosAsistenciaDePersonal = () => {
   // Función para buscar asistencias
   const buscarAsistencias = async () => {
     if (!selectedRol || !selectedMes || !dni || dni.length !== 8) {
-      setError("Por favor completa todos los campos correctamente");
+      setError({
+        success: false,
+        message: "Por favor completa todos los campos correctamente",
+      });
       return;
     }
 
-    setError("");
+    setError({ success: false, message: "" });
     setSuccessMessage("");
     setLoading(true); // Activar loading manualmente
 
@@ -734,13 +745,16 @@ const RegistrosAsistenciaDePersonal = () => {
         setData(datosParaMostrar);
         setSuccessMessage(resultado.mensaje);
       } else {
-        setError(resultado.mensaje);
+        setError({ success: false, message: resultado.mensaje });
         setData(null);
         setRegistros([]);
       }
     } catch (error) {
       console.error("Error al buscar asistencias:", error);
-      setError("Error al obtener los datos de asistencia");
+      setError({
+        success: false,
+        message: "Error al obtener los datos de asistencia",
+      });
       setData(null);
       setRegistros([]);
     } finally {
@@ -882,7 +896,7 @@ const RegistrosAsistenciaDePersonal = () => {
         {/* Error */}
         {error && (
           <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-md">
-            <p className="text-red-700 text-sm">{error}</p>
+            <p className="text-red-700 text-sm">{error.message}</p>
           </div>
         )}
 

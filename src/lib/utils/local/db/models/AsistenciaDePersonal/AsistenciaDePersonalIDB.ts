@@ -607,6 +607,395 @@ export class AsistenciaDePersonalIDB {
   }
 
   /**
+   * ✅ FUNCIÓN MEJORADA: Verifica si los registros de entrada y salida están sincronizados
+   * CRITERIO: Deben tener la misma cantidad de días ESCOLARES registrados (EXCLUYENDO EL DÍA ACTUAL)
+   * DÍAS ESCOLARES: Solo lunes a viernes (fines de semana se ignoran)
+   * MOTIVO: Durante el día actual puede haber entradas pero aún no salidas
+   */
+  private verificarSincronizacionEntradaSalida(
+    registroEntrada: AsistenciaMensualPersonal | null,
+    registroSalida: AsistenciaMensualPersonal | null
+  ): {
+    estanSincronizados: boolean;
+    razon: string;
+    diasEntrada: number;
+    diasSalida: number;
+    diasEscolaresEntrada: number;
+    diasEscolaresSalida: number;
+  } {
+    // ✅ OBTENER DÍA ACTUAL desde Redux
+    const fechaActualRedux = this.obtenerFechaActualDesdeRedux();
+    if (!fechaActualRedux) {
+      console.error(
+        "❌ No se pudo obtener fecha desde Redux para verificar sincronización"
+      );
+      // Fallback: usar todos los días si no podemos obtener la fecha actual
+      const diasEntrada = registroEntrada
+        ? Object.keys(registroEntrada.registros || {}).length
+        : 0;
+      const diasSalida = registroSalida
+        ? Object.keys(registroSalida.registros || {}).length
+        : 0;
+
+      return {
+        estanSincronizados: diasEntrada === diasSalida,
+        razon:
+          diasEntrada === diasSalida
+            ? `Ambos tienen ${diasEntrada} días (sin verificar día actual ni días escolares)`
+            : `Diferente cantidad: entrada=${diasEntrada}, salida=${diasSalida} (sin verificar día actual ni días escolares)`,
+        diasEntrada,
+        diasSalida,
+        diasEscolaresEntrada: diasEntrada,
+        diasEscolaresSalida: diasSalida,
+      };
+    }
+
+    const añoActual = fechaActualRedux.getFullYear();
+    const mesActual = fechaActualRedux.getMonth(); // 0-11
+    const diaActual = fechaActualRedux.getDate().toString();
+
+    // ✅ FUNCIÓN para verificar si un día es día escolar (lunes a viernes)
+    const esDiaEscolar = (dia: string): boolean => {
+      const diaNumero = parseInt(dia);
+      if (isNaN(diaNumero)) return false;
+
+      const fecha = new Date(añoActual, mesActual, diaNumero);
+      const diaSemana = fecha.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+      return diaSemana >= 1 && diaSemana <= 5; // Solo lunes a viernes
+    };
+
+    // Función para contar días escolares excluyendo el día actual
+    const contarDiasEscolaresSinActual = (
+      registro: AsistenciaMensualPersonal | null
+    ): number => {
+      if (!registro || !registro.registros) return 0;
+
+      const diasEscolaresSinActual = Object.keys(registro.registros).filter(
+        (dia) => {
+          return dia !== diaActual && esDiaEscolar(dia);
+        }
+      );
+
+      return diasEscolaresSinActual.length;
+    };
+
+    // Contar días en cada registro (incluyendo día actual y fines de semana para info)
+    const diasEntrada = registroEntrada
+      ? Object.keys(registroEntrada.registros || {}).length
+      : 0;
+    const diasSalida = registroSalida
+      ? Object.keys(registroSalida.registros || {}).length
+      : 0;
+
+    // ✅ CONTAR SOLO DÍAS ESCOLARES EXCLUYENDO EL DÍA ACTUAL (esto es lo importante para sincronización)
+    const diasEscolaresEntrada = contarDiasEscolaresSinActual(registroEntrada);
+    const diasEscolaresSalida = contarDiasEscolaresSinActual(registroSalida);
+
+    console.log(
+      `🔍 Verificando sincronización de días escolares (día actual: ${diaActual}):`
+    );
+    console.log(
+      `   📊 Entrada: ${diasEntrada} días total → ${diasEscolaresEntrada} días escolares históricos`
+    );
+    console.log(
+      `   📊 Salida: ${diasSalida} días total → ${diasEscolaresSalida} días escolares históricos`
+    );
+
+    // ✅ VERIFICACIÓN: Solo comparar días escolares anteriores al actual
+    if (diasEscolaresEntrada === diasEscolaresSalida) {
+      console.log(
+        `✅ SINCRONIZADOS: Ambos tienen ${diasEscolaresEntrada} días escolares históricos`
+      );
+      return {
+        estanSincronizados: true,
+        razon: `Ambos registros tienen ${diasEscolaresEntrada} días escolares históricos (excluyendo fines de semana y día actual)`,
+        diasEntrada,
+        diasSalida,
+        diasEscolaresEntrada,
+        diasEscolaresSalida,
+      };
+    }
+
+    // ❌ DESINCRONIZADOS: Diferente cantidad de días escolares
+    console.log(
+      `❌ DESINCRONIZADOS: Entrada=${diasEscolaresEntrada} días escolares, Salida=${diasEscolaresSalida} días escolares`
+    );
+    return {
+      estanSincronizados: false,
+      razon: `Diferente cantidad de días escolares históricos: entrada=${diasEscolaresEntrada}, salida=${diasEscolaresSalida} (solo lunes-viernes, excluyendo día actual)`,
+      diasEntrada,
+      diasSalida,
+      diasEscolaresEntrada,
+      diasEscolaresSalida,
+    };
+  }
+
+  /**
+   * ✅ FUNCIÓN NUEVA: Fuerza la sincronización completa desde la API
+   * Elimina ambos registros locales y los reemplaza con datos frescos de la API
+   */
+  private async forzarSincronizacionCompleta(
+    rol: RolesSistema,
+    dni: string,
+    mes: number
+  ): Promise<{
+    entrada?: AsistenciaMensualPersonal;
+    salida?: AsistenciaMensualPersonal;
+    sincronizado: boolean;
+    mensaje: string;
+  }> {
+    try {
+      const tipoPersonal = this.obtenerTipoPersonalDesdeRolOActor(rol);
+
+      console.log(
+        `🔄 FORZANDO SINCRONIZACIÓN COMPLETA para ${dni} - mes ${mes}`
+      );
+
+      // PASO 1: Eliminar ambos registros locales (entrada y salida)
+      console.log("🗑️ Eliminando registros locales desincronizados...");
+      await Promise.allSettled([
+        this.eliminarRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Entrada,
+          dni,
+          mes
+        ),
+        this.eliminarRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Salida,
+          dni,
+          mes
+        ),
+      ]);
+
+      // PASO 2: Consultar API para obtener datos frescos
+      console.log("📡 Consultando API para datos frescos...");
+      const asistenciaAPI = await this.consultarAsistenciasMensualesAPI(
+        rol,
+        dni,
+        mes
+      );
+
+      if (!asistenciaAPI) {
+        console.log(
+          "❌ API no devolvió datos después de la sincronización forzada"
+        );
+        return {
+          sincronizado: false,
+          mensaje:
+            "No se encontraron datos en la API después de la sincronización",
+        };
+      }
+
+      // PASO 3: Procesar y guardar AMBOS tipos de registro desde la API
+      console.log("💾 Guardando datos frescos de la API...");
+      await this.procesarYGuardarAsistenciaDesdeAPI(asistenciaAPI);
+
+      // PASO 4: Verificar que ambos registros se guardaron correctamente
+      const [nuevaEntrada, nuevaSalida] = await Promise.all([
+        this.obtenerRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Entrada,
+          dni,
+          mes,
+          asistenciaAPI.Id_Registro_Mensual_Entrada
+        ),
+        this.obtenerRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Salida,
+          dni,
+          mes,
+          asistenciaAPI.Id_Registro_Mensual_Salida
+        ),
+      ]);
+
+      // PASO 5: Verificar que la sincronización fue exitosa
+      const verificacion = this.verificarSincronizacionEntradaSalida(
+        nuevaEntrada,
+        nuevaSalida
+      );
+
+      if (verificacion.estanSincronizados) {
+        console.log(
+          `✅ Datos sincronizados: ${verificacion.diasEscolaresEntrada} días escolares históricos + día actual y fines de semana permitidos`
+        );
+        return {
+          entrada: nuevaEntrada || undefined,
+          salida: nuevaSalida || undefined,
+          sincronizado: true,
+          mensaje: `Datos sincronizados exitosamente: ${verificacion.diasEscolaresEntrada} días escolares históricos`,
+        };
+      } else {
+        console.log(`❌ Sincronización falló: ${verificacion.razon}`);
+        return {
+          entrada: nuevaEntrada || undefined,
+          salida: nuevaSalida || undefined,
+          sincronizado: false,
+          mensaje: `Error en sincronización: ${verificacion.razon}`,
+        };
+      }
+    } catch (error) {
+      console.error("❌ Error durante sincronización forzada:", error);
+      return {
+        sincronizado: false,
+        mensaje: `Error durante la sincronización: ${
+          error instanceof Error ? error.message : "Error desconocido"
+        }`,
+      };
+    }
+  }
+
+  /**
+   * ✅ FUNCIÓN ACTUALIZADA: Obtiene asistencias mensuales con verificación de sincronización
+   * NUEVA LÓGICA: Verifica que entrada y salida tengan la misma cantidad de días
+   */
+  public async obtenerAsistenciaMensualConAPI(
+    rol: RolesSistema,
+    dni: string,
+    mes: number
+  ): Promise<{
+    entrada?: AsistenciaMensualPersonal;
+    salida?: AsistenciaMensualPersonal;
+    encontrado: boolean;
+    mensaje: string;
+  }> {
+    try {
+      const tipoPersonal = this.obtenerTipoPersonalDesdeRolOActor(rol);
+
+      console.log(`🎯 Iniciando consulta para ${dni} - mes ${mes}`);
+
+      // PASO 1: Buscar registros locales (entrada y salida)
+      const [registroEntradaLocal, registroSalidaLocal] = await Promise.all([
+        this.obtenerRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Entrada,
+          dni,
+          mes
+        ),
+        this.obtenerRegistroMensual(
+          tipoPersonal,
+          ModoRegistro.Salida,
+          dni,
+          mes
+        ),
+      ]);
+
+      // PASO 2: Verificar sincronización por cantidad de días
+      const verificacion = this.verificarSincronizacionEntradaSalida(
+        registroEntradaLocal,
+        registroSalidaLocal
+      );
+
+      // PASO 3A: Si están sincronizados, devolver datos locales
+      if (verificacion.estanSincronizados) {
+        console.log(
+          `✅ Datos locales sincronizados: ${verificacion.diasEntrada} días`
+        );
+
+        // Si ambos tienen 0 días escolares históricos, significa que no hay datos laborales históricos
+        if (
+          verificacion.diasEscolaresEntrada === 0 &&
+          verificacion.diasEscolaresSalida === 0
+        ) {
+          console.log(
+            "📡 No hay datos escolares históricos, consultando API por primera vez..."
+          );
+
+          // Consultar API por primera vez
+          const asistenciaAPI = await this.consultarAsistenciasMensualesAPI(
+            rol,
+            dni,
+            mes
+          );
+
+          if (asistenciaAPI) {
+            console.log("✅ API devolvió datos, guardando...");
+            await this.procesarYGuardarAsistenciaDesdeAPI(asistenciaAPI);
+
+            // Obtener los registros recién guardados
+            const [nuevaEntrada, nuevaSalida] = await Promise.all([
+              this.obtenerRegistroMensual(
+                tipoPersonal,
+                ModoRegistro.Entrada,
+                dni,
+                mes,
+                asistenciaAPI.Id_Registro_Mensual_Entrada
+              ),
+              this.obtenerRegistroMensual(
+                tipoPersonal,
+                ModoRegistro.Salida,
+                dni,
+                mes,
+                asistenciaAPI.Id_Registro_Mensual_Salida
+              ),
+            ]);
+
+            return {
+              entrada: nuevaEntrada || undefined,
+              salida: nuevaSalida || undefined,
+              encontrado: true,
+              mensaje: "Datos obtenidos y guardados desde la API",
+            };
+          } else {
+            return {
+              encontrado: false,
+              mensaje:
+                "No se encontraron registros de asistencia para el mes consultado",
+            };
+          }
+        }
+
+        // Hay datos escolares históricos sincronizados
+        return {
+          entrada: registroEntradaLocal || undefined,
+          salida: registroSalidaLocal || undefined,
+          encontrado: true,
+          mensaje: `Datos sincronizados obtenidos desde IndexedDB: ${verificacion.diasEscolaresEntrada} días escolares históricos (fines de semana permitidos)`,
+        };
+      }
+
+      // PASO 3B: Si NO están sincronizados, forzar sincronización desde API
+      console.log(`⚠️ DATOS DESINCRONIZADOS: ${verificacion.razon}`);
+      console.log("🔄 Iniciando sincronización forzada desde API...");
+
+      const resultadoSincronizacion = await this.forzarSincronizacionCompleta(
+        rol,
+        dni,
+        mes
+      );
+
+      if (resultadoSincronizacion.sincronizado) {
+        return {
+          entrada: resultadoSincronizacion.entrada,
+          salida: resultadoSincronizacion.salida,
+          encontrado: true,
+          mensaje: `🔄 ${resultadoSincronizacion.mensaje}`,
+        };
+      } else {
+        return {
+          encontrado: false,
+          mensaje: `❌ Error en sincronización: ${resultadoSincronizacion.mensaje}`,
+        };
+      }
+    } catch (error) {
+      console.error(
+        "❌ Error al obtener asistencias mensuales con API:",
+        error
+      );
+      this.handleError(error, "obtenerAsistenciaMensualConAPI", {
+        rol,
+        dni,
+        mes,
+      });
+
+      return {
+        encontrado: false,
+        mensaje: "Error al obtener los datos de asistencia",
+      };
+    }
+  }
+
+  /**
    * Guarda un registro mensual de asistencia usando el ID real de la API
    */
   public async guardarRegistroMensual(
@@ -825,121 +1214,6 @@ export class AsistenciaDePersonalIDB {
     }
   }
 
-  /**
-   * Obtiene asistencias mensuales con lógica simplificada
-   * LÓGICA: Si existe en IndexedDB lo devuelve, si no existe consulta API una sola vez
-   */
-  public async obtenerAsistenciaMensualConAPI(
-    rol: RolesSistema,
-    dni: string,
-    mes: number
-  ): Promise<{
-    entrada?: AsistenciaMensualPersonal;
-    salida?: AsistenciaMensualPersonal;
-    encontrado: boolean;
-    mensaje: string;
-  }> {
-    try {
-      const tipoPersonal = this.obtenerTipoPersonalDesdeRolOActor(rol);
-
-      // PASO 1: Buscar primero en IndexedDB local (entrada y salida)
-      const [registroEntradaLocal, registroSalidaLocal] = await Promise.all([
-        this.obtenerRegistroMensual(
-          tipoPersonal,
-          ModoRegistro.Entrada,
-          dni,
-          mes
-        ),
-        this.obtenerRegistroMensual(
-          tipoPersonal,
-          ModoRegistro.Salida,
-          dni,
-          mes
-        ),
-      ]);
-
-      // PASO 2: Si hay datos locales, los devolvemos directamente
-      if (registroEntradaLocal || registroSalidaLocal) {
-        console.log(
-          `📱 Datos encontrados en IndexedDB para ${dni} - mes ${mes}`
-        );
-
-        return {
-          entrada: registroEntradaLocal || undefined,
-          salida: registroSalidaLocal || undefined,
-          encontrado: true,
-          mensaje: "Datos obtenidos desde IndexedDB local",
-        };
-      }
-
-      // PASO 3: No hay datos locales, consultar API una sola vez
-      console.log(
-        `📡 No hay datos locales, consultando API para ${dni} - mes ${mes}...`
-      );
-
-      const asistenciaAPI = await this.consultarAsistenciasMensualesAPI(
-        rol,
-        dni,
-        mes
-      );
-
-      if (asistenciaAPI) {
-        // PASO 4: Procesar y guardar datos de la API
-        console.log(
-          `✅ API devolvió datos para ${dni} - mes ${mes}, guardando en IndexedDB...`
-        );
-
-        await this.procesarYGuardarAsistenciaDesdeAPI(asistenciaAPI);
-
-        // Obtener los registros recién guardados
-        const [nuevaEntrada, nuevaSalida] = await Promise.all([
-          this.obtenerRegistroMensual(
-            tipoPersonal,
-            ModoRegistro.Entrada,
-            dni,
-            mes,
-            asistenciaAPI.Id_Registro_Mensual_Entrada
-          ),
-          this.obtenerRegistroMensual(
-            tipoPersonal,
-            ModoRegistro.Salida,
-            dni,
-            mes,
-            asistenciaAPI.Id_Registro_Mensual_Salida
-          ),
-        ]);
-
-        return {
-          entrada: nuevaEntrada || undefined,
-          salida: nuevaSalida || undefined,
-          encontrado: true,
-          mensaje: "Datos obtenidos y guardados desde la API",
-        };
-      } else {
-        // PASO 5: La API no tiene datos
-        console.log(`❌ API no devolvió datos para ${dni} - mes ${mes}`);
-
-        return {
-          encontrado: false,
-          mensaje:
-            "No se encontraron registros de asistencia para el mes consultado",
-        };
-      }
-    } catch (error) {
-      console.error("Error al obtener asistencias mensuales con API:", error);
-      this.handleError(error, "obtenerAsistenciaMensualConAPI", {
-        rol,
-        dni,
-        mes,
-      });
-
-      return {
-        encontrado: false,
-        mensaje: "Error al obtener los datos de asistencia",
-      };
-    }
-  }
-
   private async procesarYGuardarAsistenciaDesdeAPI(
     asistenciaAPI: AsistenciaCompletaMensualDePersonal,
     modoRegistroSolicitado?: ModoRegistro
@@ -1106,8 +1380,8 @@ export class AsistenciaDePersonalIDB {
 
   /**
    * Marca la asistencia de entrada o salida para un personal específico
-   * REGLA COMPLETA: Solo consulta API si NO existe registro mensual O si faltan días laborales anteriores
-   * USA FECHA REDUX en lugar de fecha local
+   * OPTIMIZADO: Si existe registro mensual, solo agrega el día actual SIN consultar API
+   * Solo consulta API si NO existe registro mensual en absoluto
    */
   public async marcarAsistencia({
     datos,
@@ -1148,13 +1422,7 @@ export class AsistenciaDePersonalIDB {
         `🚀 Iniciando marcado de asistencia: ${dni} - ${modoRegistro} - día ${dia} (fecha Redux: ${fechaActualRedux.toISOString()})`
       );
 
-      // PASO 1: Obtener todos los días laborales anteriores al día actual (usando fecha Redux)
-      const diasLaboralesAnteriores = this.obtenerDiasLaboralesAnteriores();
-      console.log(
-        `📅 Días laborales anteriores: [${diasLaboralesAnteriores.join(", ")}]`
-      );
-
-      // PASO 2: Verificar si ya existe un registro mensual en IndexedDB
+      // ✅ PASO 1: Verificar si ya existe un registro mensual en IndexedDB
       const registroMensualExistente = await this.obtenerRegistroMensual(
         tipoPersonal,
         modoRegistro,
@@ -1163,51 +1431,39 @@ export class AsistenciaDePersonalIDB {
       );
 
       if (registroMensualExistente) {
+        // ✅ CASO SIMPLE: Ya existe registro mensual → Agregar día actual directamente
         console.log(
-          `📱 Registro mensual encontrado en IndexedDB (ID: ${registroMensualExistente.Id_Registro_Mensual})`
+          `📱 Registro mensual encontrado (ID: ${registroMensualExistente.Id_Registro_Mensual}), agregando día ${dia} directamente SIN consultar API`
         );
 
-        // PASO 3: Verificar si el registro tiene TODOS los días laborales anteriores
-        const registroCompleto = this.verificarRegistroMensualCompleto(
-          registroMensualExistente,
-          diasLaboralesAnteriores
-        );
-
-        if (registroCompleto) {
-          // ✅ CASO 1: Registro existe Y está completo
-          // → Agregar el día actual directamente SIN consultar API
+        // Verificar si el día ya existe (evitar sobrescribir)
+        if (registroMensualExistente.registros[dia.toString()]) {
           console.log(
-            `✅ Registro completo hasta ayer, agregando día ${dia} directamente (SIN API)`
-          );
-
-          registroMensualExistente.registros[dia.toString()] = registro;
-
-          await this.guardarRegistroMensual(
-            tipoPersonal,
-            modoRegistro,
-            registroMensualExistente
-          );
-
-          console.log(
-            `✅ Asistencia marcada exitosamente (registro completo): ${rol} ${dni} - ${modoRegistro} - ${estado}`
-          );
-
-          return;
-        } else {
-          // ⚠️ CASO 2: Registro existe PERO le faltan días laborales
-          // → Consultar API para completar los días faltantes
-          console.log(
-            `⚠️ Registro existe pero faltan días laborales, consultando API para completar...`
+            `⚠️ El día ${dia} ya tiene registro, sobrescribiendo con nuevo valor`
           );
         }
-      } else {
-        // ❌ CASO 3: No existe registro mensual
-        // → Consultar API
-        console.log(`❌ No existe registro mensual, consultando API...`);
+
+        // Agregar/actualizar el día actual
+        registroMensualExistente.registros[dia.toString()] = registro;
+
+        // Guardar el registro actualizado
+        await this.guardarRegistroMensual(
+          tipoPersonal,
+          modoRegistro,
+          registroMensualExistente
+        );
+
+        console.log(
+          `✅ Asistencia marcada exitosamente (registro existente): ${rol} ${dni} - ${modoRegistro} - ${estado}`
+        );
+
+        return;
       }
 
-      // PASO 4: Consultar API (para casos 2 y 3)
-      console.log(`📡 Consultando API para ${dni} - mes ${mes}...`);
+      // ❌ CASO EXCEPCIONAL: No existe registro mensual → Consultar API SOLO UNA VEZ
+      console.log(
+        `❌ No existe registro mensual para ${dni} - mes ${mes}, consultando API por primera vez...`
+      );
 
       const asistenciaAPI = await this.consultarAsistenciasMensualesAPI(
         rol,
@@ -1216,18 +1472,18 @@ export class AsistenciaDePersonalIDB {
       );
 
       if (asistenciaAPI) {
-        // ✅ CASO 4A: La API devolvió datos
-        // → Procesar, guardar todos los datos de la API, y luego agregar el día actual
+        // ✅ CASO A: La API devolvió datos históricos del mes
         console.log(
-          `✅ API devolvió datos para ${dni} - mes ${mes}, procesando todos los datos...`
+          `✅ API devolvió datos históricos para ${dni} - mes ${mes}, guardando todos los datos...`
         );
 
+        // Procesar y guardar todos los datos de la API
         await this.procesarYGuardarAsistenciaDesdeAPI(
           asistenciaAPI,
           modoRegistro
         );
 
-        // Obtener el registro recién guardado/actualizado y agregar el día actual
+        // Obtener el registro recién guardado y agregar el día actual
         const idRegistroAPI =
           modoRegistro === ModoRegistro.Entrada
             ? asistenciaAPI.Id_Registro_Mensual_Entrada
@@ -1244,48 +1500,32 @@ export class AsistenciaDePersonalIDB {
         );
 
         console.log(
-          `✅ Asistencia marcada con datos actualizados de API: ${rol} ${dni} - ${modoRegistro} - ${estado}`
+          `✅ Asistencia marcada con datos históricos de API: ${rol} ${dni} - ${modoRegistro} - ${estado}`
         );
       } else {
-        // ✅ CASO 4B: La API no devolvió datos (primer registro del mes o datos aún en Redis)
-        // → Usar el registro existente o crear uno nuevo
-        if (registroMensualExistente) {
-          // Actualizar el registro existente (aunque esté incompleto)
-          console.log(
-            `📝 API no devolvió datos, actualizando registro existente para ${dni} - mes ${mes}`
-          );
+        // ✅ CASO B: La API no devolvió datos (primer registro del mes o datos en Redis)
+        console.log(
+          `📝 API no devolvió datos para ${dni} - mes ${mes}, creando primer registro mensual`
+        );
 
-          registroMensualExistente.registros[dia.toString()] = registro;
+        // Crear el primer registro mensual con solo el día actual
+        const nuevoRegistroMensual: AsistenciaMensualPersonal = {
+          Id_Registro_Mensual: 0, // ID temporal hasta sincronización con PostgreSQL
+          mes: mes as Meses,
+          Dni_Personal: dni,
+          registros: {
+            [dia.toString()]: registro,
+          },
+        };
 
-          await this.guardarRegistroMensual(
-            tipoPersonal,
-            modoRegistro,
-            registroMensualExistente
-          );
-        } else {
-          // Crear un nuevo registro mensual temporal
-          console.log(
-            `📝 API no devolvió datos, creando nuevo registro temporal para ${dni} - mes ${mes}`
-          );
-
-          const nuevoRegistroMensual: AsistenciaMensualPersonal = {
-            Id_Registro_Mensual: 0, // ID temporal hasta que se sincronice con PostgreSQL
-            mes: mes as Meses,
-            Dni_Personal: dni,
-            registros: {
-              [dia.toString()]: registro,
-            },
-          };
-
-          await this.guardarRegistroMensual(
-            tipoPersonal,
-            modoRegistro,
-            nuevoRegistroMensual
-          );
-        }
+        await this.guardarRegistroMensual(
+          tipoPersonal,
+          modoRegistro,
+          nuevoRegistroMensual
+        );
 
         console.log(
-          `✅ Asistencia marcada en registro local: ${rol} ${dni} - ${modoRegistro} - ${estado}`
+          `✅ Primer registro mensual creado: ${rol} ${dni} - ${modoRegistro} - ${estado}`
         );
       }
     } catch (error) {

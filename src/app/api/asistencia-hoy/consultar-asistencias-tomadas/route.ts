@@ -24,98 +24,157 @@ const validarPermisos = (
   seccion?: string | null,
   nivelEducativo?: string | null
 ): { esValido: boolean; mensaje?: string } => {
-  
   switch (rol) {
     case RolesSistema.Directivo:
       // Sin restricciones
       return { esValido: true };
-      
+
     case RolesSistema.Auxiliar:
       if (actor === ActoresSistema.Estudiante) {
         // Solo estudiantes de secundaria
         if (tipoAsistencia !== TipoAsistencia.ParaEstudiantesSecundaria) {
-          return { esValido: false, mensaje: "Los auxiliares solo pueden consultar estudiantes de secundaria" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los auxiliares solo pueden consultar estudiantes de secundaria",
+          };
         }
         // Para estudiantes requiere nivel, grado y sección
         if (!nivelEducativo || !grado || !seccion) {
-          return { esValido: false, mensaje: "Se requieren nivel educativo, grado y sección para consultar estudiantes" };
+          return {
+            esValido: false,
+            mensaje:
+              "Se requieren nivel educativo, grado y sección para consultar estudiantes",
+          };
         }
       } else {
         // Solo su propia asistencia
         if (!dniConsulta || dniConsulta !== miDNI) {
-          return { esValido: false, mensaje: "Los auxiliares solo pueden consultar su propia asistencia de personal" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los auxiliares solo pueden consultar su propia asistencia de personal",
+          };
         }
       }
       return { esValido: true };
-      
+
     case RolesSistema.ProfesorPrimaria:
       if (actor === ActoresSistema.Estudiante) {
         // Solo estudiantes de primaria
         if (tipoAsistencia !== TipoAsistencia.ParaEstudiantesPrimaria) {
-          return { esValido: false, mensaje: "Los profesores de primaria solo pueden consultar estudiantes de primaria" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los profesores de primaria solo pueden consultar estudiantes de primaria",
+          };
         }
         // Para estudiantes requiere nivel, grado y sección
         if (!nivelEducativo || !grado || !seccion) {
-          return { esValido: false, mensaje: "Se requieren nivel educativo, grado y sección para consultar estudiantes" };
+          return {
+            esValido: false,
+            mensaje:
+              "Se requieren nivel educativo, grado y sección para consultar estudiantes",
+          };
         }
       } else {
         // Solo su propia asistencia
         if (!dniConsulta || dniConsulta !== miDNI) {
-          return { esValido: false, mensaje: "Los profesores de primaria solo pueden consultar su propia asistencia de personal" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los profesores de primaria solo pueden consultar su propia asistencia de personal",
+          };
         }
       }
       return { esValido: true };
-      
+
     case RolesSistema.ProfesorSecundaria:
       if (actor === ActoresSistema.Estudiante) {
-        return { esValido: false, mensaje: "Los profesores de secundaria no pueden consultar asistencias de estudiantes" };
+        return {
+          esValido: false,
+          mensaje:
+            "Los profesores de secundaria no pueden consultar asistencias de estudiantes",
+        };
       } else {
         // Solo su propia asistencia
         if (!dniConsulta || dniConsulta !== miDNI) {
-          return { esValido: false, mensaje: "Los profesores de secundaria solo pueden consultar su propia asistencia" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los profesores de secundaria solo pueden consultar su propia asistencia",
+          };
         }
       }
       return { esValido: true };
-      
+
     case RolesSistema.Tutor:
       if (actor === ActoresSistema.Estudiante) {
         // Solo estudiantes de secundaria
         if (tipoAsistencia !== TipoAsistencia.ParaEstudiantesSecundaria) {
-          return { esValido: false, mensaje: "Los tutores solo pueden consultar estudiantes de secundaria" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los tutores solo pueden consultar estudiantes de secundaria",
+          };
         }
         // Para estudiantes requiere nivel, grado y sección
         if (!nivelEducativo || !grado || !seccion) {
-          return { esValido: false, mensaje: "Se requieren nivel educativo, grado y sección para consultar estudiantes" };
+          return {
+            esValido: false,
+            mensaje:
+              "Se requieren nivel educativo, grado y sección para consultar estudiantes",
+          };
         }
       } else {
         // Solo su propia asistencia
         if (!dniConsulta || dniConsulta !== miDNI) {
-          return { esValido: false, mensaje: "Los tutores solo pueden consultar su propia asistencia de personal" };
+          return {
+            esValido: false,
+            mensaje:
+              "Los tutores solo pueden consultar su propia asistencia de personal",
+          };
         }
       }
       return { esValido: true };
-      
+
     case RolesSistema.PersonalAdministrativo:
       if (actor === ActoresSistema.Estudiante) {
-        return { esValido: false, mensaje: "El personal administrativo no puede consultar asistencias de estudiantes" };
+        return {
+          esValido: false,
+          mensaje:
+            "El personal administrativo no puede consultar asistencias de estudiantes",
+        };
       } else {
         // Solo su propia asistencia
         if (!dniConsulta || dniConsulta !== miDNI) {
-          return { esValido: false, mensaje: "El personal administrativo solo puede consultar su propia asistencia" };
+          return {
+            esValido: false,
+            mensaje:
+              "El personal administrativo solo puede consultar su propia asistencia",
+          };
         }
       }
       return { esValido: true };
-      
+
     case RolesSistema.Responsable:
       if (actor !== ActoresSistema.Estudiante) {
-        return { esValido: false, mensaje: "Los responsables solo pueden consultar asistencias de estudiantes" };
+        return {
+          esValido: false,
+          mensaje:
+            "Los responsables solo pueden consultar asistencias de estudiantes",
+        };
       }
       // Solo consultas unitarias (DNI obligatorio)
       if (!dniConsulta) {
-        return { esValido: false, mensaje: "Los responsables deben especificar el DNI del estudiante a consultar" };
+        return {
+          esValido: false,
+          mensaje:
+            "Los responsables deben especificar el DNI del estudiante a consultar",
+        };
       }
       return { esValido: true };
-      
+
     default:
       return { esValido: false, mensaje: "Rol no autorizado" };
   }
@@ -137,12 +196,14 @@ export async function GET(req: NextRequest) {
     if (error && !rol && !decodedToken) return error;
 
     const MI_DNI = decodedToken.ID_Usuario;
-    
+
     // Obtener parámetros de la consulta
     const searchParams = req.nextUrl.searchParams;
     const actorParam = searchParams.get("Actor");
     const modoRegistroParam = searchParams.get("ModoRegistro");
-    const tipoAsistenciaParam = searchParams.get("TipoAsistencia") as TipoAsistencia;
+    const tipoAsistenciaParam = searchParams.get(
+      "TipoAsistencia"
+    ) as TipoAsistencia;
     const dniParam = searchParams.get("DNI"); // Opcional
     const gradoParam = searchParams.get("Grado"); // Opcional
     const seccionParam = searchParams.get("Seccion"); // Opcional
@@ -153,7 +214,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "Se requieren los parámetros Actor, ModoRegistro y TipoAsistencia",
+          message:
+            "Se requieren los parámetros Actor, ModoRegistro y TipoAsistencia",
         },
         { status: 400 }
       );
@@ -168,7 +230,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Validar que ModoRegistro sea válido
-    if (!Object.values(ModoRegistro).includes(modoRegistroParam as ModoRegistro)) {
+    if (
+      !Object.values(ModoRegistro).includes(modoRegistroParam as ModoRegistro)
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -179,7 +243,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Validar que TipoAsistencia sea válido
-    if (!Object.values(TipoAsistencia).includes(tipoAsistenciaParam as TipoAsistencia)) {
+    if (
+      !Object.values(TipoAsistencia).includes(
+        tipoAsistenciaParam as TipoAsistencia
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -219,15 +287,25 @@ export async function GET(req: NextRequest) {
 
     // Crear patrón de búsqueda
     let patronBusqueda: string;
-    
+
     if (dniParam) {
       // Consulta unitaria por DNI específico
-      if (actor === ActoresSistema.Estudiante && nivelEducativoParam && gradoParam && seccionParam) {
+      if (
+        actor === ActoresSistema.Estudiante &&
+        nivelEducativoParam &&
+        gradoParam &&
+        seccionParam
+      ) {
         patronBusqueda = `${fechaActualPeru}:${modoRegistroParam}:${actor}:${dniParam}:${nivelEducativoParam}:${gradoParam}:${seccionParam}`;
       } else {
         patronBusqueda = `${fechaActualPeru}:${modoRegistroParam}:${actor}:${dniParam}`;
       }
-    } else if (nivelEducativoParam && gradoParam && seccionParam && actor === ActoresSistema.Estudiante) {
+    } else if (
+      nivelEducativoParam &&
+      gradoParam &&
+      seccionParam &&
+      actor === ActoresSistema.Estudiante
+    ) {
       // Consulta por nivel, grado y sección para estudiantes
       patronBusqueda = `${fechaActualPeru}:${modoRegistroParam}:${actor}:*:${nivelEducativoParam}:${gradoParam}:${seccionParam}`;
     } else {
@@ -258,7 +336,7 @@ export async function GET(req: NextRequest) {
 
     for (const clave of claves) {
       const valor = await redisClientInstance.get(clave);
-      
+
       console.log(`🔍 Procesando clave: ${clave}, valor:`, valor);
 
       if (valor) {
@@ -270,7 +348,9 @@ export async function GET(req: NextRequest) {
             // Para estudiantes
             if (
               typeof valor === "string" &&
-              Object.values(EstadosAsistencia).includes(valor as EstadosAsistencia)
+              Object.values(EstadosAsistencia).includes(
+                valor as EstadosAsistencia
+              )
             ) {
               resultados.push({
                 DNI: dni,
@@ -308,7 +388,7 @@ export async function GET(req: NextRequest) {
       Dia: Number(fechaActualPeru.split("-")[2]),
       Mes: Number(fechaActualPeru.split("-")[1]) as Meses,
       ModoRegistro: modoRegistroParam as ModoRegistro,
-      Resultados: dniParam ? (resultados[0] || null) : resultados, // Unitario vs múltiple
+      Resultados: dniParam ? resultados[0] || null : resultados, // Unitario vs múltiple
     };
 
     return NextResponse.json(respuesta, { status: 200 });
