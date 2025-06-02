@@ -41,8 +41,8 @@ export class EventosIDB {
 
   constructor(
     private siasisAPI: SiasisAPIS,
-    private setIsSomethingLoading: (isLoading: boolean) => void,
-    private setError: (error: ErrorResponseAPIBase | null) => void,
+    private setIsSomethingLoading?: (isLoading: boolean) => void,
+    private setError?: (error: ErrorResponseAPIBase | null) => void,
     private setSuccessMessage?: (message: MessageProperty | null) => void
   ) {}
 
@@ -205,7 +205,7 @@ export class EventosIDB {
       }
 
       // Establecer el error en el estado global
-      this.setError({
+      this.setError?.({
         success: false,
         message: message,
         errorType: errorType,
@@ -225,8 +225,8 @@ export class EventosIDB {
    * @returns Promesa con el array de eventos
    */
   public async getAll(filtros?: IEventoFilter): Promise<IEventoLocal[]> {
-    this.setIsSomethingLoading(true);
-    this.setError(null); // Limpiar errores anteriores
+    this.setIsSomethingLoading?.(true);
+    this.setError?.(null); // Limpiar errores anteriores
     this.setSuccessMessage?.(null); // Limpiar mensajes anteriores
 
     try {
@@ -377,12 +377,12 @@ export class EventosIDB {
         );
       }
 
-      this.setIsSomethingLoading(false);
+      this.setIsSomethingLoading?.(false);
       return eventosFiltrados;
     } catch (error) {
       console.error("❌ Error en getAll():", error);
       this.handleIndexedDBError(error, "obtener lista de eventos");
-      this.setIsSomethingLoading(false);
+      this.setIsSomethingLoading?.(false);
       return []; // Devolvemos array vacío en caso de error
     }
   }
@@ -402,7 +402,7 @@ export class EventosIDB {
     // Validar mes
     if (mes < 1 || mes > 12) {
       console.error(`❌ Mes inválido: ${mes}`);
-      this.setError({
+      this.setError?.({
         success: false,
         message: "El mes debe estar entre 1 y 12",
         errorType: SystemErrorTypes.UNKNOWN_ERROR,
@@ -771,7 +771,7 @@ export class EventosIDB {
       }
     }
 
-    this.setError({
+    this.setError?.({
       success: false,
       message: message,
       errorType: errorType,
