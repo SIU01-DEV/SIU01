@@ -27,6 +27,8 @@
 //   EXTENSIONES_SALIDA_MINUTOS_PARA_PERSONALES,
 // } from "@/constants/EXTENSIONES_TOMA_ASISTENCIA";
 
+import { RolesSistema } from "@/interfaces/shared/RolesSistema";
+
 // // ✅ INTERFACES SIMPLES
 // interface EstadoAsistencia {
 //   entradaMarcada: boolean;
@@ -933,8 +935,8 @@
 
 // export default MarcarAsistenciaDePersonalButton;
 
-const MarcarAsistenciaDePersonalButton = () => {
-  return <div>EN PROCESO...</div>;
+const MarcarAsistenciaDePersonalButton = ({ rol }: { rol: RolesSistema }) => {
+  return <div>EN PROCESO...{rol}</div>;
 };
 
 export default MarcarAsistenciaDePersonalButton;
