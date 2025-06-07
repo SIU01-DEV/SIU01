@@ -46,7 +46,7 @@ const PersonalAdministrativo = () => {
           </span>
         )}
 
-      <div className="flex flex-wrap justify-evenly gap-y-8 w-full items-center -border-2 flex-1 pt-6 gap-x-[max(2.5rem,1vw)]">
+      <div className="flex flex-wrap justify-center w-full gap-y-6 sxs-only:gap-y-4 xs-only:gap-y-5 gap-x-4 sxs-only:gap-x-2 xs-only:gap-x-3">
         {isSomethingLoading && (
           <span>
             Actualizando <Loader className="w-[2rem] p-2 bg-black " />
