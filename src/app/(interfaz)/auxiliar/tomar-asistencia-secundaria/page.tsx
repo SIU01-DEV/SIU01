@@ -1,95 +1,135 @@
 "use client";
+
+import { useSS01 } from "@/hooks/useSS01";
 import "dotenv/config";
-import React, { useEffect, useState } from "react";
-import io, { Socket } from "socket.io-client";
+import React, { useEffect, useRef, useCallback } from "react";
+import { TomaAsistenciaPersonalSIU01Events } from "@/SS01/sockets/events/AsistenciaDePersonal/frontend/TomaAsistenciaPersonalSIU01Events";
 
 const TomarAsistenciaSecundaria = () => {
-  // Usar un state para almacenar la instancia del socket
-  const [socket, setSocket] = useState<typeof Socket | null>(null);
+  const { globalSocket, isConnected } = useSS01();
 
+  // Ref para mantener referencia al handler
+  const saludoHandlerRef = useRef<InstanceType<
+    typeof TomaAsistenciaPersonalSIU01Events.RESPUESTA_SALUDO_HANDLER
+  > | null>(null);
+
+  // Configurar handlers cuando el socket esté disponible
   useEffect(() => {
-    // Para pruebas, genera un token simulado con los datos necesarios
-    // En producción, este token vendría del servidor tras iniciar sesión
-    // const mockUserData = {
-    //   id: "123",
-    //   username: "profesor1",
-    //   role: "profesor-primaria"
-    // };
+    if (!globalSocket || !isConnected) {
+      return;
+    }
 
-    // O puedes usar un token codificado manualmente para pruebas
-    const fakeToken =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsInVzZXJuYW1lIjoicHJvZmVzb3IxIiwicm9sZSI6InByb2Zlc29yLXByaW1hcmlhIiwiaWF0IjoxNzA5NzUwNDAwLCJleHAiOjE3MDk3NTQwMDB9.tu-firma-aqui";
+    // Asignar la conexión a la clase de eventos
+    TomaAsistenciaPersonalSIU01Events.socketConnection = globalSocket;
 
-    // Inicializar la conexión al montar el componente
-    const socketInstance = io(process.env.NEXT_PUBLIC_SS01_URL_BASE!, {
-      auth: {
-        token: fakeToken,
-      },
-    });
+    // Configurar handler para respuesta de saludo
+    saludoHandlerRef.current =
+      new TomaAsistenciaPersonalSIU01Events.RESPUESTA_SALUDO_HANDLER(
+        (saludo) => {
+          console.log("👋 [Componente] Saludo recibido:", saludo);
+          // Aquí puedes actualizar el estado del componente, mostrar notificación, etc.
+        }
+      );
 
-    // Evento de conexión exitosa
-    socketInstance.on("connect", () => {
-      console.log("Conectado al servidor de sockets");
-    });
+    // Registrar el handler
+    const handlerRegistered = saludoHandlerRef.current.hand();
 
-    // Manejar errores de conexión
-    socketInstance.on("connect_error", (error: Error) => {
-      console.error("Error de conexión:", error.message);
-    });
+    if (handlerRegistered) {
+      console.log("✅ [Componente] Handler de saludo registrado correctamente");
+    }
 
-    // Guardar la instancia en el state
-    setSocket(socketInstance);
-
-    // Limpiar al desmontar
+    // Cleanup al desmontar o cambiar de socket
     return () => {
-      if (socketInstance) {
-        socketInstance.disconnect();
+      console.log("🧹 [Componente] Limpiando handlers de eventos");
+
+      if (saludoHandlerRef.current) {
+        saludoHandlerRef.current.unhand();
+        saludoHandlerRef.current = null;
       }
+
+      // Limpiar la referencia del socket en la clase de eventos
+      TomaAsistenciaPersonalSIU01Events.socketConnection = null;
     };
-  }, []); // Ejecutar solo al montar/desmontar
+  }, [globalSocket, isConnected]);
 
-  // Función para registrar asistencia
-  const registrarAsistencia = (estudianteId: string, estado: string) => {
-    if (socket) {
-      socket.emit("REGISTRAR-ASISTENCIA", {
-        estudianteId,
-        estado, // 'A' (Asistió), 'T' (Tardanza), 'F' (Falta)
-        aula: "3B-Secundaria",
-        fecha: new Date(),
-      });
+  // Función para enviar saludo
+  const saludarme = useCallback(() => {
+    if (!isConnected) {
+      console.warn("⚠️ [Componente] No hay conexión disponible");
+      alert("No hay conexión con el servidor");
+      return;
     }
-  };
 
-  // Función para solicitar datos de asistencia
-  const solicitarAsistencias = () => {
-    if (socket) {
-      socket.emit("SOLICITAR-ASISTENCIAS-AULA", {
-        aula: "3B-Secundaria",
-        fecha: new Date(),
-      });
+    console.log("👋 [Componente] Enviando saludo...");
+
+    const emitter =
+      new TomaAsistenciaPersonalSIU01Events.SALUDAME_SOCKET_EMITTER();
+    const sent = emitter.execute();
+
+    if (sent) {
+      console.log("✅ [Componente] Saludo enviado correctamente");
+    } else {
+      console.error("❌ [Componente] Error al enviar saludo");
+      alert("Error al enviar saludo");
     }
-  };
+  }, [isConnected]);
+
+  // Debug del estado de conexión
+  const debugConnection = useCallback(() => {
+    const status = TomaAsistenciaPersonalSIU01Events.getConnectionStatus();
+    console.log("🔍 [Debug] Estado de conexión:", status);
+    alert(`Estado: ${JSON.stringify(status, null, 2)}`);
+  }, []);
 
   return (
-    <div className="p-4">
+    <div className="p-4 max-w-lg mx-auto">
       <h1 className="text-xl font-bold mb-4">Tomar Asistencia Secundaria</h1>
 
-      <button
-        onClick={solicitarAsistencias}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Cargar Lista de Estudiantes
-      </button>
+      {/* Estado de conexión */}
+      <div className="mb-4 p-3 border rounded">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-3 h-3 rounded-full ${
+              isConnected ? "bg-green-500" : "bg-red-500"
+            }`}
+          />
+          <span className="text-sm">
+            {isConnected ? "Conectado al SS01" : "Desconectado del SS01"}
+          </span>
+        </div>
+        {globalSocket?.id && (
+          <div className="text-xs text-gray-600 mt-1">
+            Socket ID: {globalSocket.id}
+          </div>
+        )}
+      </div>
 
-      <div>Aquí irían los estudiantes</div>
+      {/* Botones de acción */}
+      <div className="space-y-2">
+        <button
+          onClick={saludarme}
+          disabled={!isConnected}
+          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {isConnected ? "SALUDARME DESDE EL SS01" : "Esperando conexión..."}
+        </button>
 
-      {/* Ejemplo de botón para probar la función registrarAsistencia */}
-      <button
-        onClick={() => registrarAsistencia("est123", "A")}
-        className="mt-4 bg-green-500 text-white px-4 py-2 rounded"
-      >
-        Marcar Presente (Prueba)
-      </button>
+        <button
+          onClick={debugConnection}
+          className="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm"
+        >
+          Debug Conexión
+        </button>
+      </div>
+
+      {/* Información adicional */}
+      <div className="mt-4 text-xs text-gray-600">
+        <div>Handler registrado: {saludoHandlerRef.current ? "✅" : "❌"}</div>
+        <div>
+          Socket asignado:{" "}
+          {TomaAsistenciaPersonalSIU01Events.socketConnection ? "✅" : "❌"}
+        </div>
+      </div>
     </div>
   );
 };

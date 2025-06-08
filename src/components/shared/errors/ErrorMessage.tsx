@@ -11,7 +11,7 @@ import {
   UserErrorTypes,
   ValidationErrorTypes,
   AuthenticationErrorTypes,
-} from "@/interfaces/shared/apis/errors";
+} from "@/interfaces/shared/errors";
 
 interface ErrorMessageProps {
   error: ErrorResponseAPIBase;

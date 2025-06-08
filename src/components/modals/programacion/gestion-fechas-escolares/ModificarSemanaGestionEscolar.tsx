@@ -1,10 +1,10 @@
 import { useState, useRef } from "react";
 import ModalContainer from "../../ModalContainer";
 import BotonConIcono from "@/components/buttons/BotonConIcono";
-import AgregarIcon from "@/components/icons/AgregarIcon"
 import CalendarioIcon from "@/components/icons/CalendarioIcon";
+import GuardarIcon from "@/components/icons/GuardarIcon";
 
-const CreacionVacacionInterEscolar = ({
+const ModificarSemanaGestionEscolar = ({
   eliminateModal,
 }: {
   eliminateModal: () => void;
@@ -154,11 +154,12 @@ const CreacionVacacionInterEscolar = ({
           </div>
         </div>
 
+        {/* Botón Guardar */}
         <div className="flex justify-center">
           <BotonConIcono
-            texto="Agregar Periodo"
-            IconTSX={<AgregarIcon className="w-4 ml-2" />}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors xs-only:w-[250px]"
+            texto="Guardar Cambios"
+            IconTSX={<GuardarIcon className="w-4 ml-2" />}
+            className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-3 rounded-lg transition-colors xs-only:w-[250px]"
           />
         </div>
         <br />
@@ -167,4 +168,4 @@ const CreacionVacacionInterEscolar = ({
   );
 };
 
-export default CreacionVacacionInterEscolar;
+export default ModificarSemanaGestionEscolar;

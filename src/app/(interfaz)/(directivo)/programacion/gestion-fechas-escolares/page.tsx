@@ -3,13 +3,39 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import CreacionVacacionInterEscolar from "@/components/modals/programacion/gestion-fechas-escolares/CreacionVacacionInterEscolar";
+import ModificarVacacionesInterescolares from "@/components/modals/programacion/gestion-fechas-escolares/ModificarVacacionesInterescolares";
+import EliminarVacacionesInterescolares from "@/components/modals/programacion/gestion-fechas-escolares/EliminarVacacionesInterescolares";
+import ModificarSemanaGestionEscolar from "@/components/modals/programacion/gestion-fechas-escolares/ModificarSemanaGestionEscolar";
+import ModificarInicioFinAñoEscolar from "@/components/modals/programacion/gestion-fechas-escolares/ModificarInicioFinAñoEscolar";
 import BotonConIcono from "@/components/buttons/BotonConIcono";
 import BasureroIcon from "@/components/icons/BasureroIcon";
+import LapizIcon from "@/components/icons/LapizIcon";
+import AgregarIcon from "@/components/icons/AgregarIcon";
 
 const GestionFechasEscolares = () => {
   const [
     showCreacionVacacionInterescolarModal,
     setShowCreacionVacacionInterescolarModal,
+  ] = useState(false);
+
+  const [
+    showModificarVacacionesInterescolares,
+    setShowModificarVacacionesInterescolares,
+  ] = useState(false);
+
+  const [
+    showElimiarVacacionesInterescolares,
+    setShowElimiarVacacionesInterescolares,
+  ] = useState(false);
+
+  const [
+    showModificarSemanaGestionEscolar,
+    setShowModificarSemanaGestionEscolar,
+  ] = useState(false);
+
+  const [
+    showModificarInicioFinAñoEscolar,
+    setShowModificarInicioFinAñoEscolar,
   ] = useState(false);
 
   const fechasVacaciones = [
@@ -27,6 +53,38 @@ const GestionFechasEscolares = () => {
         <CreacionVacacionInterEscolar
           eliminateModal={() => {
             setShowCreacionVacacionInterescolarModal(false);
+          }}
+        />
+      )}
+
+      {showModificarVacacionesInterescolares && (
+        <ModificarVacacionesInterescolares
+          eliminateModal={() => {
+            setShowModificarVacacionesInterescolares(false);
+          }}
+        />
+      )}
+
+      {showElimiarVacacionesInterescolares && (
+        <EliminarVacacionesInterescolares
+          eliminateModal={() => {
+            setShowElimiarVacacionesInterescolares(false);
+          }}
+        />
+      )}
+
+      {showModificarSemanaGestionEscolar && (
+        <ModificarSemanaGestionEscolar
+          eliminateModal={() => {
+            setShowModificarSemanaGestionEscolar(false);
+          }}
+        />
+      )}
+
+      {showModificarInicioFinAñoEscolar && (
+        <ModificarInicioFinAñoEscolar
+          eliminateModal={() => {
+            setShowModificarInicioFinAñoEscolar(false);
           }}
         />
       )}
@@ -57,7 +115,7 @@ const GestionFechasEscolares = () => {
                 </h2>
                 <BotonConIcono
                   texto="Agregar"
-                  IconTSX={<BasureroIcon className="w-[1rem] ml-2" />}
+                  IconTSX={<AgregarIcon className="w-[1rem] ml-2" />}
                   className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-md font-bold text-[1rem] transition"
                   onClick={() => {
                     setShowCreacionVacacionInterescolarModal(true);
@@ -89,12 +147,22 @@ const GestionFechasEscolares = () => {
                     <span className="italic ml-6">Fin:</span> {fecha.fin}
                   </p>
                   <div className="flex gap-2">
-                    <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition">
-                      Modificar<span className="ml-1"></span>
-                    </button>
-                    <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-md text-[0.95rem] transition">
-                      Eliminar
-                    </button>
+                    <BotonConIcono
+                      texto="Modificar"
+                      IconTSX={<LapizIcon className="w-[1rem] ml-2" />}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition"
+                      onClick={() => {
+                        setShowModificarVacacionesInterescolares(true);
+                      }}
+                    />
+                    <BotonConIcono
+                      texto="Eliminar"
+                      IconTSX={<BasureroIcon className="w-[1rem] ml-2" />}
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-md text-[0.95rem] transition"
+                      onClick={() => {
+                        setShowElimiarVacacionesInterescolares(true);
+                      }}
+                    />
                   </div>
                 </div>
               ))}
@@ -128,9 +196,14 @@ const GestionFechasEscolares = () => {
                     <span className="italic">Inicio:</span> {fecha.inicio}
                     <span className="italic ml-6">Fin:</span> {fecha.fin}
                   </p>
-                  <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition">
-                    Modificar<span className="ml-1"></span>
-                  </button>
+                  <BotonConIcono
+                      texto="Modificar"
+                      IconTSX={<LapizIcon className="w-[1rem] ml-2" />}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition"
+                      onClick={() => {
+                        setShowModificarSemanaGestionEscolar(true);
+                      }}
+                    />
                 </div>
               ))}
             </section>
@@ -163,9 +236,14 @@ const GestionFechasEscolares = () => {
                     <span className="italic">Inicio:</span> {fecha.inicio}
                     <span className="italic ml-6">Fin:</span> {fecha.fin}
                   </p>
-                  <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition">
-                    Modificar<span className="ml-1"></span>
-                  </button>
+                  <BotonConIcono
+                      texto="Modificar"
+                      IconTSX={<LapizIcon className="w-[1rem] ml-2" />}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition"
+                      onClick={() => {
+                        setShowModificarInicioFinAñoEscolar(true);
+                      }}
+                    />
                 </div>
               ))}
             </section>
