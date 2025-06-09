@@ -14,7 +14,7 @@ import { validateDNI } from "@/lib/helpers/validators/data/validateDNI";
 import {
   RequestErrorTypes,
   SystemErrorTypes,
-} from "@/interfaces/shared/apis/errors";
+} from "@/interfaces/shared/errors";
 
 // Función para validar permisos según rol
 const validarPermisosEliminacion = (

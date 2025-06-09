@@ -9,7 +9,7 @@ import { validateDNI } from "@/lib/helpers/validators/data/validateDNI";
 import {
   RequestErrorTypes,
   SystemErrorTypes,
-} from "@/interfaces/shared/apis/errors";
+} from "@/interfaces/shared/errors";
 import { redisClient } from "../../../../../config/Redis/RedisClient";
 import { ErrorResponseAPIBase } from "@/interfaces/shared/apis/types";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
