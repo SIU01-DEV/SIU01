@@ -24,7 +24,7 @@ import AllErrorTypes, {
   SystemErrorTypes,
   UserErrorTypes,
   DataErrorTypes,
-} from "@/interfaces/shared/apis/errors";
+} from "@/interfaces/shared/errors";
 import { SiasisAPIS } from "@/interfaces/shared/SiasisComponents";
 import fetchSiasisApiGenerator from "@/lib/helpers/generators/fetchSiasisApisGenerator";
 import {
