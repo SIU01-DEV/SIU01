@@ -17,13 +17,6 @@ const CreacionVacacionInterEscolar = ({
   const inputInicioRef = useRef<HTMLInputElement>(null);
   const inputFinRef = useRef<HTMLInputElement>(null);
 
-  const formatearFecha = (fecha: Date) =>
-    fecha.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
   const obtenerDiaSemana = (fecha: Date) => {
     const dias = [
       "Domingo",

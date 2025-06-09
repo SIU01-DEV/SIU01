@@ -1,12 +1,44 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import Link from "next/link";
+import BotonConIcono from "@/components/buttons/BotonConIcono";
+import LapizIcon from "@/components/icons/LapizIcon";
+import ModificarRegistroPrimaria from "@/components/modals/programacion/gestion-horarios-asistencia/ModificarRegistroPrimaria";
+import ModificarRegistroSecundaria from "@/components/modals/programacion/gestion-horarios-asistencia/ModificarRegistroSecundaria";
 
 const GestionFechasEscolares = () => {
   const horarioGestion = [
     { inicio: "7:45am", fin: "8:30am" },
   ];
 
+  const [
+      showModificarRegistroPrimaria,
+      setShowModificarRegistroPrimaria,
+    ] = useState(false);
+  
+  const [
+      showModificarRegistroSecundaria,
+      setShowModificarRegistroSecundaria,
+    ] = useState(false);
+
   return (
+    <>
+      {showModificarRegistroPrimaria && (
+          <ModificarRegistroPrimaria
+            eliminateModal={() => {
+              setShowModificarRegistroPrimaria(false);
+            }}
+          />
+        )}
+
+      {showModificarRegistroSecundaria && (
+          <ModificarRegistroSecundaria
+            eliminateModal={() => {
+              setShowModificarRegistroSecundaria(false);
+            }}
+          />
+        )}
+
     <div className="w-full h-full flex flex-col">
       {/* Título con botón volver */}
       <div className="flex-shrink-0 px-6 pt-8 pb-6">
@@ -38,9 +70,14 @@ const GestionFechasEscolares = () => {
                   <span className="italic">Inicio:</span> {horario.inicio}
                   <span className="italic ml-6">Fin:</span> {horario.fin}
                 </p>
-                <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition">
-                  Modificar <span className="ml-1"></span>
-                </button>
+                <BotonConIcono
+                      texto="Modificar"
+                      IconTSX={<LapizIcon className="w-[1rem] ml-2" />}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition"
+                      onClick={() => {
+                        setShowModificarRegistroPrimaria(true);
+                      }}
+                />
               </div>
             ))}
           </section>
@@ -58,15 +95,21 @@ const GestionFechasEscolares = () => {
                   <span className="italic">Inicio:</span> {horario.inicio}
                   <span className="italic ml-6">Fin:</span> {horario.fin}
                 </p>
-                <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition">
-                  Modificar <span className="ml-1"></span>
-                </button>
+                <BotonConIcono
+                      texto="Modificar"
+                      IconTSX={<LapizIcon className="w-[1rem] ml-2" />}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-md flex items-center text-[0.95rem] transition"
+                      onClick={() => {
+                        setShowModificarRegistroSecundaria(true);
+                      }}
+                    />
               </div>
             ))}
           </section>
         </div>
       </div>
     </div>
+    </>
   );
 };
 

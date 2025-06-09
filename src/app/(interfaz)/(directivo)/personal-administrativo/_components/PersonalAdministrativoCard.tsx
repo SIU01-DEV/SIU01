@@ -4,16 +4,12 @@ import BotonConIcono from "../../../../../components/buttons/BotonConIcono";
 import VerEditarIcon from "@/components/icons/VerEditarIcon";
 import { Link } from "next-view-transitions";
 import { PersonalAdministrativoSinContraseña } from "@/interfaces/shared/apis/shared/others/types";
-import RelojIcon from "@/components/icons/RelojIcon";
-import  { convertirAFormato12Horas } from "@/lib/helpers/formatters/fechas-hora/formatearAFormato12Horas";
 
 const PersonalAdministrativoCard = ({
   PersonalAdministrativo: {
     Apellidos,
     Celular,
     Cargo,
-    Horario_Laboral_Entrada,
-    Horario_Laboral_Salida,
     DNI_Personal_Administrativo,
     Estado,
     Nombres,
@@ -42,7 +38,6 @@ const PersonalAdministrativoCard = ({
         {Nombres} {Apellidos}
       </span>
 
-
       <div
         className="text-[17px] sxs-only:text-[15px] xs-only:text-[16px] font-medium text-azul-principal text-center leading-tight py-0 "
         title={DNI_Personal_Administrativo}
@@ -60,18 +55,6 @@ const PersonalAdministrativoCard = ({
       <div className="flex items-center justify-center gap-1 text-[15px] sxs-only:text-[13px] text-negro">
         <TelefonoIcon className="w-[1.1rem] sxs-only:w-[0.9rem] text-verde-principal" />
         <span title={Celular}>{Celular}</span>
-      </div>
-
-      <div className="flex items-center justify-center gap-1 text-[15px] sxs-only:text-[13px] text-negro">
-        <RelojIcon className="w-[1.1rem] sxs-only:w-[0.9rem] text-negro" />
-        <span
-          title={`${convertirAFormato12Horas(
-            String(Horario_Laboral_Entrada)
-          )} - ${convertirAFormato12Horas(String(Horario_Laboral_Salida))}`}
-        >
-          {convertirAFormato12Horas(String(Horario_Laboral_Entrada))} -{" "}
-          {convertirAFormato12Horas(String(Horario_Laboral_Salida))}
-        </span>
       </div>
 
       <span
