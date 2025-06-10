@@ -146,11 +146,11 @@ export class HandlerDirectivoAsistenciaResponse extends HandlerAsistenciaBase {
     console.log("AHORA salida:", horaSalida);
 
     const [entradaHours, entradaMinutes] = String(
-      personal.Horario_Laboral_Entrada
+      personal.Hora_Entrada_Dia_Actual
     )
       .split(":")
       .map(Number);
-    const [salidaHours, salidaMinutes] = String(personal.Horario_Laboral_Salida)
+    const [salidaHours, salidaMinutes] = String(personal.Hora_Salida_Dia_Actual)
       .split(":")
       .map(Number);
 
