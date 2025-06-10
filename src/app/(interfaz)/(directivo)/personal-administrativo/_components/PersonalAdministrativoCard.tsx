@@ -20,7 +20,7 @@ const PersonalAdministrativoCard = ({
   PersonalAdministrativo: PersonalAdministrativoSinContraseña;
 }) => {
   return (
-    <div className="w-[285px] h-[355px] sxs-only:w-[240px] sxs-only:h-[330px] xs-only:w-[250px] xs-only:h-[340px] sm-only:w-[270px] sm-only:h-[345px] md-only:w-[280px] lg-only:w-[285px] xl-only:w-[285px] rounded-[15px] shadow-[0_0_6px_3px_rgba(0,0,0,0.15)] flex flex-col items-center justify-center py-4 sxs-only:py-3.5 xs-only:py-3.5 sm-only:py-4 px-3 sxs-only:px-2 gap-0.5 bg-white overflow-hidden">
+    <div className="w-[285px] h-[355px] sxs-only:w-[240px] sxs-only:h-[330px] xs-only:w-[250px] xs-only:h-[340px] sm-only:w-[270px] sm-only:h-[345px] md-only:w-[280px] lg-only:w-[285px] xl-only:w-[285px] rounded-[15px] shadow-[0_0_6px_3px_rgba(0,0,0,0.15)] flex flex-col items-center justify-center py-4 sxs-only:py-3.5 xs-only:py-3.5 sm-only:py-4 px-3 sxs-only:px-2 gap-1.5 bg-blanco overflow-hidden">
       <FotoPerfilClientSide
         className="w-[75px] h-[75px] sxs-only:w-[60px] sxs-only:h-[60px] xs-only:w-[65px] xs-only:h-[65px] sm-only:w-[70px] sm-only:h-[70px] rounded-full object-cover"
         Google_Drive_Foto_ID={Google_Drive_Foto_ID}
