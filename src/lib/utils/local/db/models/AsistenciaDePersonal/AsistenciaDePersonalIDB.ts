@@ -35,7 +35,7 @@ import { EstadosAsistenciaPersonal } from "@/interfaces/shared/EstadosAsistencia
 import { DIA_ESCOLAR_MINIMO_PARA_CONSULTAR_API } from "@/constants/DISPONIBILLIDAD_IDS_RDP02_GENERADOS";
 import {
   AsistenciaCompletaMensualDePersonal,
-  GetAsistenciaMensualDePersonalSuccessResponse,
+  GetAsistenciaMensuhalDePersonalSuccessResponse,
 } from "@/interfaces/shared/apis/api01/personal/types";
 import store from "@/global/store";
 import {
