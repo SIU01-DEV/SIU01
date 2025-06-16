@@ -96,7 +96,7 @@ export const ListaPersonal = ({
 
       // Eliminar usando el modelo de IndexedDB
       const resultado = await asistenciaDePersonalIDB.eliminarAsistencia({
-        dni: personal.ID_o_DNI,
+        id_o_dni: personal.ID_o_DNI,
         rol: rol,
         modoRegistro: modoRegistro,
       });
