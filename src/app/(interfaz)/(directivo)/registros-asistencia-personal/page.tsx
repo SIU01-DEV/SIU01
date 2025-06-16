@@ -1,22 +1,16 @@
 "use client";
 import { EstadosAsistenciaPersonalStyles } from "@/Assets/styles/EstadosAsistenciaPersonalStyles";
-
 import { EstadosAsistenciaPersonal } from "@/interfaces/shared/EstadosAsistenciaPersonal";
 import { Meses, mesesTextos } from "@/interfaces/shared/Meses";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import getDiasEscolaresPorMes from "@/lib/helpers/functions/date/getDiasEsolaresPorMes";
 import { segundosAMinutos } from "@/lib/helpers/functions/time/segundosAMinutos";
-
 import {
   ErrorResponseAPIBase,
   MessageProperty,
 } from "@/interfaces/shared/apis/types";
 import { useState, useEffect } from "react";
-import {
-  AsistenciaDePersonalIDB,
-  AsistenciaMensualPersonal,
-  RegistroEntradaSalida,
-} from "@/lib/utils/local/db/models/AsistenciaDePersonal/AsistenciaDePersonalIDB";
+import { AsistenciaDePersonalIDB } from "@/lib/utils/local/db/models/AsistenciaDePersonal/AsistenciaDePersonalIDB";
 import { convertirAFormato12Horas } from "@/lib/helpers/formatters/fechas-hora/formatearAFormato12Horas";
 import { ENTORNO } from "@/constants/ENTORNO";
 import { Entorno } from "@/interfaces/shared/Entornos";
@@ -24,6 +18,12 @@ import {
   EventosIDB,
   IEventoLocal,
 } from "@/lib/utils/local/db/models/EventosIDB";
+import { RegistroEntradaSalida } from "@/interfaces/shared/AsistenciaRequests";
+import { AsistenciaMensualPersonalLocal } from "@/lib/utils/local/db/models/AsistenciaDePersonal/AsistenciaDePersonalTypes";
+import { RootState } from "@/global/store";
+import { useSelector } from "react-redux";
+import { Search, Loader2 } from "lucide-react";
+// import SiasisUserSelector from "@/components/inputs/SiasisUserSelector";
 
 // 🔧 CONSTANTE DE CONFIGURACIÓN PARA DESARROLLO
 const CONSIDERAR_DIAS_NO_ESCOLARES = false; // false = solo días laborales, true = incluir sábados y domingos
@@ -40,26 +40,62 @@ interface RegistroDia {
   estadoSalida: EstadosAsistenciaPersonal;
   esEvento: boolean;
   nombreEvento?: string;
-  esDiaNoEscolar?: boolean; // Nuevo campo para identificar fines de semana
+  esDiaNoEscolar?: boolean;
 }
 
 const RegistrosAsistenciaDePersonal = () => {
-  const [selectedRol, setSelectedRol] = useState("");
+  const [selectedRol, setSelectedRol] = useState<RolesSistema>();
   const [selectedMes, setSelectedMes] = useState("");
   const [dni, setDni] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingEventos, setLoadingEventos] = useState(false);
-  const [data, setData] = useState<AsistenciaMensualPersonal | null>(null);
+  const [data, setData] = useState<AsistenciaMensualPersonalLocal | null>(null);
   const [eventos, setEventos] = useState<IEventoLocal[]>([]);
   const [registros, setRegistros] = useState<RegistroDia[]>([]);
   const [error, setError] = useState<ErrorResponseAPIBase | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Obtener fecha actual
-  const fechaActual = new Date();
-  const mesActual = fechaActual.getMonth() + 1; // getMonth() devuelve 0-11
-  const diaActual = fechaActual.getDate();
-  const añoActual = fechaActual.getFullYear();
+  // ✅ MEJORADO: Usar useSelector para obtener fecha de Redux reactivamente
+  const fechaHoraRedux = useSelector(
+    (state: RootState) => state.others.fechaHoraActualReal.fechaHora
+  );
+
+  // ✅ MEJORADO: Función helper para obtener fecha Redux con manejo de errores
+  const obtenerFechaRedux = () => {
+    if (!fechaHoraRedux) {
+      return null;
+    }
+
+    try {
+      const fechaObj = new Date(fechaHoraRedux);
+
+      // Validar que la fecha sea válida
+      if (isNaN(fechaObj.getTime())) {
+        console.error("❌ Fecha inválida desde Redux:", fechaHoraRedux);
+        return null;
+      }
+
+      return {
+        fechaActual: fechaObj,
+        mesActual: fechaObj.getMonth() + 1,
+        diaActual: fechaObj.getDate(),
+        añoActual: fechaObj.getFullYear(),
+        timestamp: fechaObj.getTime(),
+        esHoy: true,
+      };
+    } catch (error) {
+      console.error("❌ Error al procesar fecha de Redux:", error);
+      return null;
+    }
+  };
+
+  // ✅ MEJORADO: Obtener fecha una vez y manejar el caso de error
+  const fechaRedux = obtenerFechaRedux();
+
+  // ✅ MEJORADO: Si no hay fecha de Redux, mostrar error en lugar de fallback
+  const mesActual = fechaRedux?.mesActual || new Date().getMonth() + 1; // fallback solo si Redux falla
+  const diaActual = fechaRedux?.diaActual || new Date().getDate();
+  const añoActual = fechaRedux?.añoActual || new Date().getFullYear();
 
   // Función para obtener meses disponibles (hasta mayo o mes actual)
   const getMesesDisponibles = () => {
@@ -321,11 +357,11 @@ const RegistrosAsistenciaDePersonal = () => {
       );
 
       const resultado =
-        await asistenciaPersonalIDB.obtenerAsistenciaMensualConAPI(
+        await asistenciaPersonalIDB.obtenerAsistenciaMensualConAPI({
+          id_o_dni: dni,
+          mes,
           rol,
-          dni,
-          mes
-        );
+        });
 
       if (!resultado.encontrado) {
         console.log(`❌ No se encontraron datos para ${dni} - mes ${mes}`);
@@ -505,9 +541,6 @@ const RegistrosAsistenciaDePersonal = () => {
 
         const registroDia = registrosCombinados[dia];
 
-        // ✅ RESTO DEL PROCESAMIENTO IGUAL (sin cambios en esta parte)
-        // ... (mantener toda la lógica existente de procesamiento de entrada y salida)
-
         // Procesar información de entrada
         let entradaProgramada = "N/A";
         let entradaReal = "No registrado";
@@ -683,8 +716,10 @@ const RegistrosAsistenciaDePersonal = () => {
     }
   };
 
-  // ✅ CORRECCIÓN 1: Limpiar error correctamente
-  const buscarAsistencias = async () => {
+  // ✅ FUNCIÓN DE BÚSQUEDA - Solo se ejecuta al hacer clic en botón o submit
+  const buscarAsistencias = async (e?: React.FormEvent) => {
+    e?.preventDefault(); // Prevenir submit por defecto si viene de formulario
+
     if (!selectedRol || !selectedMes || !dni || dni.length !== 8) {
       setError({
         success: false,
@@ -694,7 +729,7 @@ const RegistrosAsistenciaDePersonal = () => {
     }
 
     // ✅ CAMBIO: Limpiar error completamente en lugar de setear mensaje vacío
-    setError(null); // ← En lugar de setError({ success: false, message: "" })
+    setError(null);
     setSuccessMessage("");
     setLoading(true);
 
@@ -702,14 +737,14 @@ const RegistrosAsistenciaDePersonal = () => {
       await obtenerEventos(parseInt(selectedMes));
 
       const resultado =
-        await asistenciaPersonalIDB.obtenerAsistenciaMensualConAPI(
-          selectedRol as RolesSistema,
-          dni,
-          parseInt(selectedMes)
-        );
+        await asistenciaPersonalIDB.obtenerAsistenciaMensualConAPI({
+          rol: selectedRol as RolesSistema,
+          id_o_dni: dni,
+          mes: parseInt(selectedMes),
+        });
 
       if (resultado.encontrado) {
-        let datosParaMostrar: AsistenciaMensualPersonal;
+        let datosParaMostrar: AsistenciaMensualPersonalLocal;
 
         if (resultado.entrada) {
           datosParaMostrar = resultado.entrada;
@@ -739,7 +774,7 @@ const RegistrosAsistenciaDePersonal = () => {
     }
   };
 
-  // Procesar datos cuando cambien
+  // Procesar datos cuando cambien - SOLO después de búsqueda exitosa
   useEffect(() => {
     if (data && selectedRol && selectedMes && dni) {
       procesarDatos();
@@ -747,15 +782,19 @@ const RegistrosAsistenciaDePersonal = () => {
   }, [data, eventos, selectedRol, selectedMes, dni]);
 
   return (
-    <div className="p-4 lg-only:p-6">
+    <div className="p-3 lg-only:p-4 xl-only:p-6">
       {/* 🔧 BANNER DE DESARROLLO cuando está activado el modo días no escolares */}
       {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-4">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 lg-only:px-4 lg-only:py-3 xl-only:px-5 xl-only:py-4 rounded-lg mb-3 lg-only:mb-4">
           <div className="flex items-center">
-            <span className="text-lg mr-2">⚠️</span>
+            <span className="text-base lg-only:text-lg xl-only:text-xl mr-2">
+              ⚠️
+            </span>
             <div>
-              <p className="font-medium">Modo Desarrollo Activado</p>
-              <p className="text-sm">
+              <p className="font-medium text-sm lg-only:text-base xl-only:text-lg">
+                Modo Desarrollo Activado
+              </p>
+              <p className="text-xs lg-only:text-sm xl-only:text-base">
                 Se están mostrando registros de todos los días (incluidos
                 sábados y domingos). Para producción, cambiar
                 CONSIDERAR_DIAS_NO_ESCOLARES a false.
@@ -766,136 +805,165 @@ const RegistrosAsistenciaDePersonal = () => {
       )}
 
       {/* Formulario de búsqueda */}
-      <div className="bg-white rounded-lg shadow-md p-4 lg-only:p-6 mb-6">
-        <h2 className="text-xl lg-only:text-2xl font-bold text-gris-oscuro mb-4">
+      <div className="bg-white rounded-lg shadow-md p-3 lg-only:p-4 xl-only:p-6 mb-4 lg-only:mb-5 xl-only:mb-6">
+        <h2 className="text-lg lg-only:text-xl xl-only:text-2xl font-bold text-gris-oscuro mb-3 lg-only:mb-4">
           Consulta de Asistencias de Personal
         </h2>
 
-        <div className="grid grid-cols-1 md-only:grid-cols-2 lg-only:grid-cols-4 gap-4">
-          {/* Selector de Rol */}
-          <div>
-            <label className="block text-sm font-medium text-gris-oscuro mb-2">
-              Rol
-            </label>
-            <select
-              value={selectedRol}
-              onChange={(e) => setSelectedRol(e.target.value)}
-              disabled={loading || loadingEventos} // Bloquear durante carga
-              className="w-full px-3 py-2 border border-gris-claro rounded-md focus:outline-none focus:ring-2 focus:ring-azul-principal disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Seleccionar rol</option>
-              {roles.map((rol) => (
-                <option key={rol.value} value={rol.value}>
-                  {rol.label}
-                </option>
-              ))}
-            </select>
+        <form
+          onSubmit={buscarAsistencias}
+          className="space-y-4 lg-only:space-y-5 xl-only:space-y-6"
+        >
+          <div className="grid grid-cols-1 md-only:grid-cols-2 lg-only:grid-cols-4 gap-3 lg-only:gap-4">
+            {/* Selector de Rol */}
+            <div>
+              <label className="block text-xs lg-only:text-sm xl-only:text-base font-medium text-gris-oscuro mb-1 lg-only:mb-2">
+                Rol
+              </label>
+              <select
+                value={selectedRol}
+                onChange={(e) => setSelectedRol(e.target.value as RolesSistema)}
+                disabled={loading || loadingEventos}
+                className={`w-full px-2 py-1.5 lg-only:px-3 lg-only:py-2 xl-only:px-4 xl-only:py-2.5 border border-gris-claro rounded-md transition-colors duration-200 text-xs lg-only:text-sm xl-only:text-base ${
+                  loading || loadingEventos
+                    ? "border-gris-claro bg-gray-50 cursor-not-allowed opacity-50"
+                    : "focus:outline-none focus:ring-2 focus:ring-azul-principal focus:border-azul-principal hover:border-azul-principal"
+                }`}
+              >
+                <option value="">Seleccionar rol</option>
+                {roles.map((rol) => (
+                  <option key={rol.value} value={rol.value}>
+                    {rol.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Input DNI */}
+            <div>
+
+              {/* <SiasisUserSelector rolUsuariosABuscar={selectedRol} /> */}
+
+              <label className="block text-xs lg-only:text-sm xl-only:text-base font-medium text-gris-oscuro mb-1 lg-only:mb-2">
+                DNI
+              </label>
+              <input
+                type="text"
+                value={dni}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  setDni(value);
+                }}
+                disabled={loading || loadingEventos}
+                minLength={8}
+                maxLength={8}
+                placeholder="12345678"
+                className={`w-full px-2 py-1.5 lg-only:px-3 lg-only:py-2 xl-only:px-4 xl-only:py-2.5 border border-gris-claro rounded-md transition-colors duration-200 text-xs lg-only:text-sm xl-only:text-base ${
+                  loading || loadingEventos
+                    ? "border-gris-claro bg-gray-50 cursor-not-allowed opacity-50"
+                    : "focus:outline-none focus:ring-2 focus:ring-azul-principal focus:border-azul-principal hover:border-azul-principal"
+                }`}
+              />
+            </div>
+
+            {/* Selector de Mes - LIMITADO */}
+            <div>
+              <label className="block text-xs lg-only:text-sm xl-only:text-base font-medium text-gris-oscuro mb-1 lg-only:mb-2">
+                Mes
+              </label>
+              <select
+                value={selectedMes}
+                onChange={(e) => setSelectedMes(e.target.value)}
+                disabled={loading || loadingEventos}
+                className={`w-full px-2 py-1.5 lg-only:px-3 lg-only:py-2 xl-only:px-4 xl-only:py-2.5 border border-gris-claro rounded-md transition-colors duration-200 text-xs lg-only:text-sm xl-only:text-base ${
+                  loading || loadingEventos
+                    ? "border-gris-claro bg-gray-50 cursor-not-allowed opacity-50"
+                    : "focus:outline-none focus:ring-2 focus:ring-azul-principal focus:border-azul-principal hover:border-azul-principal"
+                }`}
+              >
+                <option value="">Seleccionar mes</option>
+                {getMesesDisponibles().map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Botón de búsqueda */}
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={loading || loadingEventos}
+                className={`w-full px-3 py-1.5 lg-only:px-4 lg-only:py-2 xl-only:px-5 xl-only:py-2.5 rounded-md font-medium transition-colors duration-200 flex items-center justify-center text-xs lg-only:text-sm xl-only:text-base ${
+                  loading || loadingEventos
+                    ? "bg-gris-intermedio text-white cursor-not-allowed opacity-50"
+                    : "bg-azul-principal text-white hover:bg-blue-600 shadow-sm hover:shadow-md"
+                }`}
+              >
+                {loading || loadingEventos ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-3 w-3 lg-only:h-4 lg-only:w-4" />
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-3 h-3 lg-only:w-4 lg-only:h-4 mr-1 lg-only:mr-2" />
+                    Buscar
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* Selector de Mes - LIMITADO */}
-          <div>
-            <label className="block text-sm font-medium text-gris-oscuro mb-2">
-              Mes
-            </label>
-            <select
-              value={selectedMes}
-              onChange={(e) => setSelectedMes(e.target.value)}
-              disabled={loading && loadingEventos} // Bloquear durante carga
-              className="w-full px-3 py-2 border border-gris-claro rounded-md focus:outline-none focus:ring-2 focus:ring-azul-principal disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Seleccionar mes</option>
-              {getMesesDisponibles().map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Indicador de progreso */}
+          {(loading || loadingEventos) && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 lg-only:p-4">
+              <div className="flex items-center">
+                <Loader2 className="animate-spin h-4 w-4 lg-only:h-5 lg-only:w-5 text-azul-principal mr-2 lg-only:mr-3" />
+                <div>
+                  <p className="text-azul-principal font-medium text-sm lg-only:text-base">
+                    Consultando registros de asistencia...
+                  </p>
+                  <p className="text-gris-intermedio text-xs lg-only:text-sm">
+                    Esto puede tomar unos segundos
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Input DNI */}
-          <div>
-            <label className="block text-sm font-medium text-gris-oscuro mb-2">
-              DNI
-            </label>
-            <input
-              type="text"
-              value={dni}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "").slice(0, 8);
-                setDni(value);
-              }}
-              disabled={loading && loadingEventos} // Bloquear durante carga
-              minLength={8}
-              maxLength={8}
-              placeholder="12345678"
-              className="w-full px-3 py-2 border border-gris-claro rounded-md focus:outline-none focus:ring-2 focus:ring-azul-principal disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
+          {/* Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-300 rounded-lg p-3 lg-only:p-4">
+              <p className="text-red-700 text-xs lg-only:text-sm">
+                {error.message}
+              </p>
+            </div>
+          )}
 
-          {/* Botón de búsqueda */}
-          <div className="flex items-end">
-            <button
-              onClick={buscarAsistencias}
-              disabled={loading || loadingEventos}
-              className="w-full bg-azul-principal text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-            >
-              {loading && loadingEventos ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Buscando...
-                </>
-              ) : (
-                "Buscar"
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-md">
-            <p className="text-red-700 text-sm">{error.message}</p>
-          </div>
-        )}
-
-        {/* Mensaje de éxito */}
-        {successMessage && (
-          <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-md">
-            <p className="text-green-700 text-sm">{successMessage}</p>
-          </div>
-        )}
+          {/* Mensaje de éxito */}
+          {successMessage && (
+            <div className="bg-green-50 border border-green-300 rounded-lg p-3 lg-only:p-4">
+              <p className="text-green-700 text-xs lg-only:text-sm">
+                {successMessage}
+              </p>
+            </div>
+          )}
+        </form>
       </div>
 
       {/* Información del usuario */}
       {data && !loading && !loadingEventos && (
-        <div className="bg-white rounded-lg shadow-md p-4 lg-only:p-6 mb-6">
-          <h3 className="text-lg lg-only:text-xl font-semibold text-gris-oscuro mb-2">
+        <div className="bg-white rounded-lg shadow-md p-3 lg-only:p-4 xl-only:p-6 mb-4 lg-only:mb-5 xl-only:mb-6">
+          <h3 className="text-base lg-only:text-lg xl-only:text-xl font-semibold text-gris-oscuro mb-1 lg-only:mb-2">
             Asistencias del {roles.find((r) => r.value === selectedRol)?.label}
           </h3>
-          <p className="text-gris-intermedio">
-            <span className="font-medium">DNI: {data.Dni_Personal}</span> - Mes:{" "}
-            {mesesTextos[data.mes as Meses]}
+          <p className="text-gris-intermedio text-sm lg-only:text-base">
+            <span className="font-medium">DNI: {data.ID_o_DNI_Personal}</span> -
+            Mes: {mesesTextos[data.mes as Meses]}
           </p>
-          <p className="text-xs text-gris-intermedio mt-1">
+          <p className="text-xs lg-only:text-sm text-gris-intermedio mt-1">
             Total de registros: {registros.length}{" "}
             {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL
               ? "(todos los días hasta la fecha actual)"
@@ -904,57 +972,38 @@ const RegistrosAsistenciaDePersonal = () => {
         </div>
       )}
 
-      {(loading || loadingEventos) && (
-        <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-          <div className="flex flex-col items-center justify-center">
-            <div className="relative">
-              {/* Spinner principal */}
-              <div className="w-16 h-16 border-4 border-gray-200 border-t-azul-principal rounded-full animate-spin"></div>
-              {/* Pulsos concéntricos - MANTENER */}
-              <div className="absolute inset-0 w-16 h-16 border-4 border-azul-principal/20 rounded-full animate-ping"></div>
-            </div>
-            <p className="mt-4 text-gris-intermedio font-medium">
-              Consultando registros de asistencia...
-            </p>
-            <p className="text-sm text-gris-intermedio">
-              Esto puede tomar unos segundos
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Tabla de registros */}
       {registros.length > 0 && !loading && !loadingEventos && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 lg-only:mb-5 xl-only:mb-6">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gris-oscuro text-white">
                 <tr>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Fecha
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Entrada Programada
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Entrada Real
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Diferencia Entrada
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Estado Entrada
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Salida Programada
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Salida Real
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Diferencia Salida
                   </th>
-                  <th className="px-2 lg-only:px-4 py-3 text-center text-xs lg-only:text-sm font-medium">
+                  <th className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center text-xs lg-only:text-sm font-medium">
                     Estado Salida
                   </th>
                 </tr>
@@ -967,7 +1016,7 @@ const RegistrosAsistenciaDePersonal = () => {
                       index % 2 === 0 ? "bg-white" : "bg-gray-50"
                     } ${registro.esDiaNoEscolar ? "bg-blue-50" : ""}`}
                   >
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       <div className="flex flex-col items-center">
                         <span>
                           {new Date(
@@ -990,18 +1039,18 @@ const RegistrosAsistenciaDePersonal = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       {registro.entradaProgramada}
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       {registro.entradaReal}
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       {registro.diferenciaEntrada}
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center">
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium ${
                           EstadosAsistenciaPersonalStyles[
                             registro.estadoEntrada
                           ]
@@ -1010,18 +1059,18 @@ const RegistrosAsistenciaDePersonal = () => {
                         {mapearEstadoParaUI(registro.estadoEntrada)}
                       </span>
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       {registro.salidaProgramada}
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       {registro.salidaReal}
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-xs lg-only:text-sm text-gris-oscuro text-center">
                       {registro.diferenciaSalida}
                     </td>
-                    <td className="px-2 lg-only:px-4 py-3 text-center">
+                    <td className="px-1 lg-only:px-2 xl-only:px-4 py-2 lg-only:py-3 text-center">
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium ${
                           EstadosAsistenciaPersonalStyles[registro.estadoSalida]
                         }`}
                       >
@@ -1038,20 +1087,20 @@ const RegistrosAsistenciaDePersonal = () => {
 
       {/* Leyenda explicativa de estados */}
       {registros.length > 0 && !loading && !loadingEventos && (
-        <div className="mt-6 bg-white rounded-lg shadow-md p-4 lg-only:p-6">
-          <h4 className="text-sm lg-only:text-base font-semibold text-gris-oscuro mb-4">
+        <div className="bg-white rounded-lg shadow-md p-3 lg-only:p-4 xl-only:p-6">
+          <h4 className="text-sm lg-only:text-base xl-only:text-lg font-semibold text-gris-oscuro mb-3 lg-only:mb-4">
             Leyenda de Estados de Asistencia
           </h4>
-          <div className="grid grid-cols-1 md-only:grid-cols-2 lg-only:grid-cols-3 gap-3 lg-only:gap-4">
+          <div className="grid grid-cols-1 md-only:grid-cols-2 lg-only:grid-cols-3 gap-2 lg-only:gap-3 xl-only:gap-4">
             {/* Estados de Entrada */}
-            <div className="space-y-3">
-              <h5 className="text-xs lg-only:text-sm font-medium text-gris-oscuro bg-gray-100 px-2 py-1 rounded">
+            <div className="space-y-2 lg-only:space-y-3">
+              <h5 className="text-xs lg-only:text-sm xl-only:text-base font-medium text-gris-oscuro bg-gray-100 px-2 py-1 rounded">
                 Estados de Entrada
               </h5>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.En_Tiempo
                     ]
@@ -1059,14 +1108,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   En tiempo
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Llegó dentro del horario establecido
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Temprano
                     ]
@@ -1074,14 +1123,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Temprano
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Llegó antes del horario programado
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Tarde
                     ]
@@ -1089,21 +1138,21 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Tarde
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Llegó después del horario establecido
                 </p>
               </div>
             </div>
 
             {/* Estados de Salida */}
-            <div className="space-y-3">
-              <h5 className="text-xs lg-only:text-sm font-medium text-gris-oscuro bg-gray-100 px-2 py-1 rounded">
+            <div className="space-y-2 lg-only:space-y-3">
+              <h5 className="text-xs lg-only:text-sm xl-only:text-base font-medium text-gris-oscuro bg-gray-100 px-2 py-1 rounded">
                 Estados de Salida
               </h5>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Cumplido
                     ]
@@ -1111,14 +1160,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Cumplido
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Completó su horario laboral correctamente
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Salida_Anticipada
                     ]
@@ -1126,21 +1175,21 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Salida anticipada
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Se retiró antes del horario establecido
                 </p>
               </div>
             </div>
 
             {/* Estados Especiales */}
-            <div className="space-y-3">
-              <h5 className="text-xs lg-only:text-sm font-medium text-gris-oscuro bg-gray-100 px-2 py-1 rounded">
+            <div className="space-y-2 lg-only:space-y-3">
+              <h5 className="text-xs lg-only:text-sm xl-only:text-base font-medium text-gris-oscuro bg-gray-100 px-2 py-1 rounded">
                 Estados Especiales
               </h5>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Falta
                     ]
@@ -1148,14 +1197,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Falta
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   No asistió al trabajo ese día
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.No_Registrado
                     ]
@@ -1163,14 +1212,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   No registrado
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   No marcó entrada/salida en el sistema
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Sin_Registro
                     ]
@@ -1178,14 +1227,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Sin registro
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   No se tomó asistencia ese día
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Inactivo
                     ]
@@ -1193,14 +1242,14 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Inactivo
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Usuario inactivo en el sistema
                 </p>
               </div>
 
               <div className="flex items-start space-x-2">
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                  className={`inline-block px-1.5 py-0.5 lg-only:px-2 lg-only:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                     EstadosAsistenciaPersonalStyles[
                       EstadosAsistenciaPersonal.Evento
                     ]
@@ -1208,26 +1257,57 @@ const RegistrosAsistenciaDePersonal = () => {
                 >
                   Evento
                 </span>
-                <p className="text-xs text-gris-intermedio">
+                <p className="text-xs lg-only:text-sm text-gris-intermedio">
                   Día feriado o evento especial
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Nota explicativa */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-700">
-              <span className="font-medium">Nota:</span> Los estados se calculan
-              automáticamente según la diferencia entre el horario programado y
-              el horario real de entrada/salida registrado en el sistema.
-              {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL && (
-                <span className="block mt-1">
-                  <span className="font-medium">Desarrollo:</span> Los registros
-                  con fondo azul claro corresponden a fines de semana.
+          {/* Información importante mejorada */}
+          <div className="mt-4 lg-only:mt-6 p-3 lg-only:p-4 bg-blue-50 border-l-4 border-azul-principal rounded-lg">
+            <h5 className="text-sm lg-only:text-base font-semibold text-azul-principal mb-2 lg-only:mb-3 flex items-center">
+              <span className="w-4 h-4 lg-only:w-5 lg-only:h-5 bg-azul-principal text-white rounded-full flex items-center justify-center text-xs mr-2">
+                ℹ️
+              </span>
+              Información del Sistema
+            </h5>
+            <div className="grid grid-cols-1 md-only:grid-cols-2 gap-2 lg-only:gap-3 text-xs lg-only:text-sm text-gris-intermedio">
+              <div className="flex items-start space-x-2">
+                <span className="text-azul-principal font-bold">📊</span>
+                <span>
+                  Los estados se calculan automáticamente según la diferencia
+                  entre horarios programados y reales
                 </span>
+              </div>
+              <div className="flex items-start space-x-2">
+                <span className="text-verde-principal font-bold">⏰</span>
+                <span>
+                  Los registros se sincronizan en tiempo real con el servidor
+                </span>
+              </div>
+              <div className="flex items-start space-x-2">
+                <span className="text-violeta-principal font-bold">📅</span>
+                <span>
+                  Se muestran solo días laborables hasta la fecha actual
+                </span>
+              </div>
+              <div className="flex items-start space-x-2">
+                <span className="text-naranja-principal font-bold">🎯</span>
+                <span>
+                  Los datos incluyen entrada, salida y diferencias horarias
+                </span>
+              </div>
+              {CONSIDERAR_DIAS_NO_ESCOLARES && ENTORNO === Entorno.LOCAL && (
+                <div className="md-only:col-span-2 flex items-start space-x-2">
+                  <span className="text-yellow-600 font-bold">⚠️</span>
+                  <span>
+                    <strong>Modo Desarrollo:</strong> Los registros con fondo
+                    azul corresponden a fines de semana
+                  </span>
+                </div>
               )}
-            </p>
+            </div>
           </div>
         </div>
       )}

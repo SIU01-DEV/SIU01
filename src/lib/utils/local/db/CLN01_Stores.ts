@@ -292,6 +292,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Profesor_Primaria", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -309,6 +315,12 @@ export const CLN01_Stores = {
         name: "por_profesor_mes",
         keyPath: ["DNI_Profesor_Primaria", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -329,6 +341,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Profesor_Secundaria", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -346,6 +364,12 @@ export const CLN01_Stores = {
         name: "por_profesor_mes",
         keyPath: ["DNI_Profesor_Secundaria", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -366,6 +390,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Auxiliar", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -383,6 +413,12 @@ export const CLN01_Stores = {
         name: "por_auxiliar_mes",
         keyPath: ["DNI_Auxiliar", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -403,6 +439,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Personal_Administrativo", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -420,6 +462,12 @@ export const CLN01_Stores = {
         name: "por_administrativo_mes",
         keyPath: ["DNI_Personal_Administrativo", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -440,6 +488,12 @@ export const CLN01_Stores = {
         keyPath: ["Id_Directivo", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -457,6 +511,12 @@ export const CLN01_Stores = {
         name: "por_directivo_mes",
         keyPath: ["Id_Directivo", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -481,6 +541,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -498,6 +564,12 @@ export const CLN01_Stores = {
         name: "por_estudiante_mes",
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -517,6 +589,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -534,6 +612,12 @@ export const CLN01_Stores = {
         name: "por_estudiante_mes",
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -553,6 +637,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -570,6 +660,12 @@ export const CLN01_Stores = {
         name: "por_estudiante_mes",
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -590,6 +686,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -607,6 +709,12 @@ export const CLN01_Stores = {
         name: "por_estudiante_mes",
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },
@@ -626,6 +734,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -644,6 +758,12 @@ export const CLN01_Stores = {
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
       },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
     ],
   },
 
@@ -661,6 +781,12 @@ export const CLN01_Stores = {
         name: "por_estudiante_mes",
         keyPath: ["DNI_Estudiante", "Mes"],
         options: { unique: true },
+      },
+      // ✅ NUEVO: Índice para ultima_fecha_actualizacion
+      {
+        name: "por_ultima_fecha_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
       },
     ],
   },

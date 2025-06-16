@@ -175,7 +175,7 @@ export class HandlerDirectivoAsistenciaResponse extends HandlerAsistenciaBase {
     switch (rol) {
       case ActoresSistema.ProfesorPrimaria:
         return this.getProfesoresPrimaria().map((profesor) => ({
-          DNI: profesor.DNI_Profesor_Primaria,
+          ID_o_DNI: profesor.DNI_Profesor_Primaria,
           GoogleDriveFotoId: profesor.Google_Drive_Foto_ID,
           Nombres: profesor.Nombres,
           Apellidos: profesor.Apellidos,
@@ -185,7 +185,7 @@ export class HandlerDirectivoAsistenciaResponse extends HandlerAsistenciaBase {
       case ActoresSistema.ProfesorSecundaria:
       case ActoresSistema.Tutor:
         return this.getProfesoresSecundaria().map((profesor) => ({
-          DNI: profesor.DNI_Profesor_Secundaria,
+          ID_o_DNI: profesor.DNI_Profesor_Secundaria,
           GoogleDriveFotoId: profesor.Google_Drive_Foto_ID,
           Nombres: profesor.Nombres,
           Apellidos: profesor.Apellidos,
@@ -194,7 +194,7 @@ export class HandlerDirectivoAsistenciaResponse extends HandlerAsistenciaBase {
 
       case ActoresSistema.Auxiliar:
         return this.getAuxliares().map((auxiliar) => ({
-          DNI: auxiliar.DNI_Auxiliar,
+          ID_o_DNI: auxiliar.DNI_Auxiliar,
           GoogleDriveFotoId: auxiliar.Google_Drive_Foto_ID,
           Nombres: auxiliar.Nombres,
           Apellidos: auxiliar.Apellidos,
@@ -203,7 +203,7 @@ export class HandlerDirectivoAsistenciaResponse extends HandlerAsistenciaBase {
 
       case ActoresSistema.PersonalAdministrativo:
         return this.getPersonalAdministrativo().map((personal) => ({
-          DNI: personal.DNI_Personal_Administrativo,
+          ID_o_DNI: personal.DNI_Personal_Administrativo,
           GoogleDriveFotoId: personal.Google_Drive_Foto_ID,
           Nombres: personal.Nombres,
           Apellidos: personal.Apellidos,
