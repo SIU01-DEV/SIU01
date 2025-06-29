@@ -123,6 +123,154 @@ export class AsistenciaDePersonalAPIClient {
   }
 
   /**
+   * ✅ NUEVO: Consulta Redis específicamente para una persona
+   * 🎯 PROPÓSITO: Obtener asistencia específica de una persona desde Redis
+   */
+  public async consultarRedisEspecifico(
+    rol: RolesSistema,
+    id_o_dni: string | number,
+    modoRegistro: ModoRegistro
+  ): Promise<{
+    encontrado: boolean;
+    datos?: any;
+    mensaje: string;
+  }> {
+    try {
+      // Construir URL para consulta específica
+      const params = new URLSearchParams({
+        ModoRegistro: modoRegistro,
+        TipoAsistencia: TipoAsistencia.ParaPersonal,
+      });
+
+      const actor = this.mapper.obtenerActorDesdeRol(rol);
+      params.append("Actor", actor);
+      params.append("ID_o_DNI", String(id_o_dni));
+
+      // Si ES consulta propia, no agregar Actor para que la API detecte consulta propia
+
+      const url = `/api/asistencia-hoy/consultar-asistencias-tomadas?${params.toString()}`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            encontrado: false,
+            mensaje: "No se encontró asistencia en Redis",
+          };
+        }
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Verificar si hay resultados
+      const tieneResultados =
+        data.Resultados &&
+        (Array.isArray(data.Resultados)
+          ? data.Resultados.length > 0
+          : data.Resultados !== null);
+
+      if (tieneResultados) {
+        console.log(
+          `✅ Asistencia encontrada en Redis para ${id_o_dni} - ${modoRegistro}`
+        );
+        return {
+          encontrado: true,
+          datos: data,
+          mensaje: "Asistencia encontrada en Redis",
+        };
+      } else {
+        console.log(
+          `📭 No se encontró asistencia en Redis para ${id_o_dni} - ${modoRegistro}`
+        );
+        return {
+          encontrado: false,
+          mensaje: "No se encontró asistencia en Redis para esta persona",
+        };
+      }
+    } catch (error) {
+      console.error("❌ Error al consultar Redis específico:", error);
+      return {
+        encontrado: false,
+        mensaje: `Error al consultar Redis: ${
+          error instanceof Error ? error.message : "Error desconocido"
+        }`,
+      };
+    }
+  }
+
+  /**
+   * ✅ NUEVO: Consulta Redis para ambos modos (entrada y salida) de una persona
+   */
+  public async consultarRedisCompletoPorPersona(
+    rol: RolesSistema,
+    id_o_dni: string | number,
+    incluirSalidas: boolean = true
+  ): Promise<{
+    entrada?: any;
+    salida?: any;
+    encontradoEntrada: boolean;
+    encontradoSalida: boolean;
+    mensaje: string;
+  }> {
+    try {
+      const timestampConsulta = this.dateHelper.obtenerTimestampPeruano();
+      console.log(
+        `🔍 Consulta Redis completa para ${id_o_dni} - incluirSalidas: ${incluirSalidas} (${this.dateHelper.formatearTimestampLegible(
+          timestampConsulta
+        )})`
+      );
+
+      // Consultar entrada
+      const resultadoEntrada = await this.consultarRedisEspecifico(
+        rol,
+        id_o_dni,
+        ModoRegistro.Entrada
+      );
+
+      let resultadoSalida = {
+        encontrado: false,
+        mensaje: "Salidas no solicitadas",
+      };
+
+      // Consultar salida solo si se requiere
+      if (incluirSalidas) {
+        resultadoSalida = await this.consultarRedisEspecifico(
+          rol,
+          id_o_dni,
+          ModoRegistro.Salida
+        );
+      }
+
+      const mensaje = `Redis: entrada=${resultadoEntrada.encontrado}, salida=${
+        incluirSalidas ? resultadoSalida.encontrado : "no consultada"
+      }`;
+
+      return {
+        entrada: resultadoEntrada.encontrado
+          ? resultadoEntrada.datos
+          : undefined,
+        salida: resultadoSalida.encontrado
+          ? (resultadoSalida as any).datos
+          : undefined,
+        encontradoEntrada: resultadoEntrada.encontrado,
+        encontradoSalida: incluirSalidas ? resultadoSalida.encontrado : false,
+        mensaje,
+      };
+    } catch (error) {
+      console.error("❌ Error en consulta Redis completa:", error);
+      return {
+        encontradoEntrada: false,
+        encontradoSalida: false,
+        mensaje: `Error en consulta Redis: ${
+          error instanceof Error ? error.message : "Error desconocido"
+        }`,
+      };
+    }
+  }
+
+  /**
    * ✅ NUEVO: Marca asistencia en Redis mediante API
    */
   public async marcarAsistenciaEnRedis(
@@ -410,90 +558,6 @@ export class AsistenciaDePersonalAPIClient {
   }
 
   /**
-   * Verifica la disponibilidad de la API
-   * ✅ SIN CAMBIOS: No maneja timestamps críticos
-   */
-  public async verificarDisponibilidadAPI(): Promise<OperationResult> {
-    try {
-      const { fetchSiasisAPI } = fetchSiasisApiGenerator(this.siasisAPI);
-
-      const fetchCancelable = await fetchSiasisAPI({
-        endpoint: "/api/health",
-        method: "GET",
-      });
-
-      if (!fetchCancelable) {
-        return {
-          exitoso: false,
-          mensaje: "No se pudo crear la petición de verificación",
-        };
-      }
-
-      const response = await fetchCancelable.fetch();
-
-      if (!response.ok) {
-        return {
-          exitoso: false,
-          mensaje: `API no disponible: ${response.status} ${response.statusText}`,
-        };
-      }
-
-      return {
-        exitoso: true,
-        mensaje: "API disponible",
-      };
-    } catch (error) {
-      console.error("Error al verificar disponibilidad de API:", error);
-      return {
-        exitoso: false,
-        mensaje: `Error de conexión: ${
-          error instanceof Error ? error.message : "Error desconocido"
-        }`,
-      };
-    }
-  }
-
-  /**
-   * Obtiene información del estado del servidor
-   * ✅ CORREGIDO: Usar DateHelper para timestamps
-   */
-  public async obtenerEstadoServidor(): Promise<{
-    disponible: boolean;
-    latencia?: number;
-    version?: string;
-    timestamp?: number;
-  }> {
-    // ✅ CORREGIDO: Usar DateHelper en lugar de Date.now()
-    const tiempoInicio = this.dateHelper.obtenerTimestampPeruano();
-
-    try {
-      const resultado = await this.verificarDisponibilidadAPI();
-      const tiempoFin = this.dateHelper.obtenerTimestampPeruano();
-      const latencia = tiempoFin - tiempoInicio;
-
-      console.log(
-        `🌐 Estado servidor verificado - Latencia: ${latencia}ms - Disponible: ${resultado.exitoso}`
-      );
-
-      return {
-        disponible: resultado.exitoso,
-        latencia,
-        timestamp: tiempoFin,
-      };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      const tiempoFin = this.dateHelper.obtenerTimestampPeruano();
-      const latencia = tiempoFin - tiempoInicio;
-
-      return {
-        disponible: false,
-        latencia,
-        timestamp: tiempoFin,
-      };
-    }
-  }
-
-  /**
    * Reintenta una operación con backoff exponencial
    * ✅ CORREGIDO: Usar DateHelper para delays y logging temporal
    */
@@ -752,115 +816,5 @@ export class AsistenciaDePersonalAPIClient {
     return { entrada, salida };
   }
 
-  /**
-   * Maneja errores específicos de API
-   * ✅ SIN CAMBIOS: Manejo de errores no requiere timestamps
-   */
-  public manejarErrorAPI(error: any): OperationResult {
-    if (error?.response?.status === 404) {
-      return {
-        exitoso: false,
-        mensaje: "Recurso no encontrado en el servidor",
-      };
-    }
 
-    if (error?.response?.status === 401) {
-      return {
-        exitoso: false,
-        mensaje: "No autorizado - token inválido o expirado",
-      };
-    }
-
-    if (error?.response?.status === 500) {
-      return {
-        exitoso: false,
-        mensaje: "Error interno del servidor",
-      };
-    }
-
-    if (error?.code === "NETWORK_ERROR") {
-      return {
-        exitoso: false,
-        mensaje: "Error de conexión a la red",
-      };
-    }
-
-    if (error?.code === "TIMEOUT") {
-      return {
-        exitoso: false,
-        mensaje: "Tiempo de espera agotado",
-      };
-    }
-
-    return {
-      exitoso: false,
-      mensaje: `Error desconocido: ${
-        error instanceof Error ? error.message : "Error sin descripción"
-      }`,
-    };
-  }
-
-  /**
-   * ✅ NUEVO: Obtiene estadísticas de las operaciones de API
-   */
-  public async obtenerEstadisticasOperaciones(): Promise<{
-    totalConsultas: number;
-    consultasExitosas: number;
-    totalEliminaciones: number;
-    eliminacionesExitosas: number;
-    ultimaOperacion: number;
-    latenciaPromedio: number;
-  }> {
-    // Esta sería una implementación básica
-    // En producción, podrías almacenar estas estadísticas en IndexedDB
-    const timestampActual = this.dateHelper.obtenerTimestampPeruano();
-
-    return {
-      totalConsultas: 0,
-      consultasExitosas: 0,
-      totalEliminaciones: 0,
-      eliminacionesExitosas: 0,
-      ultimaOperacion: timestampActual,
-      latenciaPromedio: 0,
-    };
-  }
-
-  /**
-   * ✅ NUEVO: Limpia caché de operaciones antiguas
-   */
-  public async limpiarCacheOperacionesAntiguas(
-    diasMaximos: number = 7
-  ): Promise<OperationResult> {
-    try {
-      const timestampLimite =
-        this.dateHelper.obtenerTimestampPeruano() -
-        diasMaximos * 24 * 60 * 60 * 1000;
-
-      console.log(
-        `🧹 Limpiando operaciones anteriores a: ${this.dateHelper.formatearTimestampLegible(
-          timestampLimite
-        )}`
-      );
-
-      // Aquí implementarías la lógica de limpieza real
-      // Por ahora solo log informativo
-
-      return {
-        exitoso: true,
-        mensaje: `Cache de operaciones limpiado (anteriores a ${diasMaximos} días)`,
-        datos: {
-          timestampLimite,
-          diasLimpiados: diasMaximos,
-        },
-      };
-    } catch (error) {
-      console.error("Error al limpiar cache de operaciones:", error);
-      return {
-        exitoso: false,
-        mensaje: `Error al limpiar cache: ${
-          error instanceof Error ? error.message : "Error desconocido"
-        }`,
-      };
-    }
-  }
 }
