@@ -1,7 +1,7 @@
 import React from "react";
 import { NivelEducativo } from "@/interfaces/shared/NivelEducativo";
 
-interface FiltrosConsultaAsistenciasProps {
+interface FiltrosConsultaAsistenciasEscolaresProps {
   nivelTemporal: NivelEducativo | "";
   setNivelTemporal: (nivel: NivelEducativo | "") => void;
   gradoTemporal: number | "";
@@ -15,9 +15,12 @@ interface FiltrosConsultaAsistenciasProps {
   mesesDisponibles: Array<{ value: number; label: string }>;
   onConsultar: () => void;
   onLimpiar: () => void;
+  isLoading?: boolean;
 }
 
-const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
+const FiltrosConsultaAsistenciasEscolares: React.FC<
+  FiltrosConsultaAsistenciasEscolaresProps
+> = ({
   nivelTemporal,
   setNivelTemporal,
   gradoTemporal,
@@ -31,8 +34,10 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
   mesesDisponibles,
   onConsultar,
   onLimpiar,
+  isLoading = false,
 }) => {
-  const puedeConsultar = nivelTemporal && gradoTemporal && seccionTemporal;
+  const puedeConsultar =
+    nivelTemporal && gradoTemporal && seccionTemporal && !isLoading;
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -46,7 +51,8 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
           onChange={(e) =>
             setNivelTemporal(e.target.value as NivelEducativo | "")
           }
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isLoading}
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           <option value="">Seleccionar</option>
           <option value={NivelEducativo.PRIMARIA}>Primaria</option>
@@ -64,7 +70,7 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
           onChange={(e) =>
             setGradoTemporal(e.target.value ? Number(e.target.value) : "")
           }
-          disabled={!nivelTemporal}
+          disabled={!nivelTemporal || isLoading}
           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           <option value="">Seleccionar</option>
@@ -84,7 +90,7 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
         <select
           value={seccionTemporal}
           onChange={(e) => setSeccionTemporal(e.target.value)}
-          disabled={!gradoTemporal}
+          disabled={!gradoTemporal || isLoading}
           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           <option value="">Seleccionar</option>
@@ -104,7 +110,8 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
         <select
           value={mesTemporal}
           onChange={(e) => setMesTemporal(Number(e.target.value))}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isLoading}
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           {mesesDisponibles.map((mes) => (
             <option key={mes.value} value={mes.value}>
@@ -121,7 +128,7 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
           disabled={!puedeConsultar}
           className="w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
         >
-          Consultar
+          {isLoading ? "Consultando..." : "Consultar"}
         </button>
       </div>
 
@@ -129,7 +136,8 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
       <div className="flex items-end min-w-[120px]">
         <button
           onClick={onLimpiar}
-          className="w-full p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors font-medium"
+          disabled={isLoading}
+          className="w-full p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
         >
           Limpiar
         </button>
@@ -138,4 +146,4 @@ const FiltrosConsultaAsistencias: React.FC<FiltrosConsultaAsistenciasProps> = ({
   );
 };
 
-export default FiltrosConsultaAsistencias;
+export default FiltrosConsultaAsistenciasEscolares;
