@@ -1077,4 +1077,39 @@ export const CLN01_Stores: Record<TablasLocal, any> = {
       },
     ],
   },
+
+  // ========================================
+  // REPORTES
+  // ========================================
+  reportes_asistencia_escolar: {
+    keyPath: "Combinacion_Parametros_Reporte",
+    autoIncrement: false,
+    indexes: [
+      {
+        name: "por_estado",
+        keyPath: "Estado_Reporte",
+        options: { unique: false },
+      },
+      {
+        name: "por_fecha_generacion",
+        keyPath: "Fecha_Generacion",
+        options: { unique: false },
+      },
+      {
+        name: "por_google_drive_id",
+        keyPath: "Datos_Google_Drive_Id",
+        options: { unique: false },
+      },
+      {
+        name: "por_ultima_actualizacion",
+        keyPath: "ultima_fecha_actualizacion",
+        options: { unique: false },
+      },
+      {
+        name: "por_estado_fecha",
+        keyPath: ["Estado_Reporte", "Fecha_Generacion"],
+        options: { unique: false },
+      },
+    ],
+  },
 };

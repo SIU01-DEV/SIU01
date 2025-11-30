@@ -160,52 +160,29 @@ const TablaAsistenciasEscolares: React.FC<TablaAsistenciasEscolaresProps> = ({
         },
       });
 
-      // PASO 1: CALCULAR ESTRUCTURA DEL CALENDARIO (Lunes a Viernes)
+      // PASO 1: CALCULAR ESTRUCTURA DEL CALENDARIO (Lunes a Viernes) - VERSIÓN CORREGIDA
       const año = new Date().getFullYear();
       const mes = datos.mes;
-      const primerDia = new Date(año, mes - 1, 1);
-      const ultimoDia = new Date(año, mes, 0);
-      const diasEnMes = ultimoDia.getDate();
-
-      let diaSemanaInicio = primerDia.getDay();
-      if (diaSemanaInicio === 0) diaSemanaInicio = 7;
+      const diasEnMes = new Date(año, mes, 0).getDate();
 
       const estructuraCalendario: Array<{
         dia: number | null;
         diaSemana: string;
       }> = [];
 
-      let diaActualMes = 1;
+      const diasSemanaTextos = ["D", "L", "M", "M", "J", "V", "S"];
 
-      while (diaActualMes <= diasEnMes) {
-        const diasSemanaTextos = ["", "L", "M", "M", "J", "V"];
+      // Iterar por cada día del mes
+      for (let dia = 1; dia <= diasEnMes; dia++) {
+        const fecha = new Date(año, mes - 1, dia);
+        const diaSemana = fecha.getDay();
 
-        for (let diaSemana = 1; diaSemana <= 5; diaSemana++) {
-          if (diaActualMes === 1 && diaSemana < diaSemanaInicio) {
-            estructuraCalendario.push({
-              dia: null,
-              diaSemana: diasSemanaTextos[diaSemana],
-            });
-          } else if (diaActualMes <= diasEnMes) {
-            const fechaActual = new Date(año, mes - 1, diaActualMes);
-            const diaSemanaActual = fechaActual.getDay();
-
-            if (diaSemanaActual >= 1 && diaSemanaActual <= 5) {
-              estructuraCalendario.push({
-                dia: diaActualMes,
-                diaSemana: diasSemanaTextos[diaSemanaActual],
-              });
-              diaActualMes++;
-            } else {
-              diaActualMes++;
-              diaSemana--;
-            }
-          } else {
-            estructuraCalendario.push({
-              dia: null,
-              diaSemana: diasSemanaTextos[diaSemana],
-            });
-          }
+        // Solo incluir días de Lunes (1) a Viernes (5)
+        if (diaSemana >= 1 && diaSemana <= 5) {
+          estructuraCalendario.push({
+            dia: dia,
+            diaSemana: diasSemanaTextos[diaSemana],
+          });
         }
       }
 

@@ -56,6 +56,9 @@ export enum TablasRemoto {
 
   // Control de cambios
   Tabla_Ultima_Modificacion = "T_Ultima_Modificacion_Tablas",
+
+  // Reportes
+  Tabla_Reportes_Asistencia_Escolar = "T_Reportes_Asistencia_Escolar",
 }
 
 /**
@@ -115,7 +118,7 @@ export enum TablasLocal {
   Tabla_Ajustes_Sistema = "ajustes_generales_sistema",
   Tabla_Bloqueo_Roles = "bloqueo_roles",
   Tabla_Registro_Fallos = "registro_fallos_sistema",
-  Tabla_Codigos_OTP = "codigos_otp", // Podría no existir realmente en local
+  Tabla_Codigos_OTP = "codigos_otp",
 
   // Control de cambios
   Tabla_Ultima_Modificacion = "ultima_modificacion_tablas",
@@ -133,6 +136,9 @@ export enum TablasLocal {
 
   // Persistencias para Colas
   Tabla_Cola_Asistencias_Escolares = "cola_asistencias_escolares",
+
+  // Reportes
+  Tabla_Reportes_Asistencia_Escolar = "reportes_asistencia_escolar",
 }
 
 /**
@@ -441,6 +447,14 @@ export const TablasSistema = {
     sincronizable: false,
   },
 
+  // Reportes
+  REPORTES_ASISTENCIA_ESCOLAR: {
+    nombreRemoto: TablasRemoto.Tabla_Reportes_Asistencia_Escolar,
+    nombreLocal: TablasLocal.Tabla_Reportes_Asistencia_Escolar,
+    descripcion:
+      "Reportes de asistencia escolar generados y almacenados en cache",
+    sincronizable: true,
+  },
 };
 
 export default TablasSistema;
