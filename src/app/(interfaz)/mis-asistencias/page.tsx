@@ -116,6 +116,10 @@ const MisAsistencias = () => {
       value: RolesSistema.PersonalAdministrativo,
       label: "Personal Administrativo",
     },
+    {
+      value: RolesSistema.Tutor,
+      label: "Tutor",
+    },
   ];
 
   // Instancia del orquestador

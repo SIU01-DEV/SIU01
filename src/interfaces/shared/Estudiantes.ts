@@ -19,3 +19,4 @@ export interface EstudianteConAulaYRelacion
   extends Omit<EstudianteDelResponsable, "Id_Aula"> {
   aula: T_Aulas | null | undefined;
 }
+ 

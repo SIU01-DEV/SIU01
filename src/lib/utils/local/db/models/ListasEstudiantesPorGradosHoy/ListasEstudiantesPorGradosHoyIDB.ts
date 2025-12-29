@@ -203,6 +203,7 @@ export class ListasEstudiantesPorGradosHoyIDB {
           `Error en la respuesta del servidor: ${response.status} ${response.statusText}`
         );
       }
+
       return await response.json();
     } catch (error) {
       this.handleError(error, "fetchReporteFromServer");

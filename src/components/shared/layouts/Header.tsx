@@ -111,7 +111,8 @@ const Header = ({
     //Solicitar todas las listas de estudiantes de manera secuencial
     if (
       Rol !== RolesSistema.PersonalAdministrativo &&
-      Rol !== RolesSistema.Responsable
+      Rol !== RolesSistema.Responsable &&
+      Rol !== RolesSistema.ProfesorSecundaria
     ) {
       obtenerListasEstudiantes();
     }
