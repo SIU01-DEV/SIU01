@@ -4,7 +4,6 @@ import MarcarAsistenciaPropiaDePersonalModal from "@/components/modals/Asistenci
 import store, { RootState } from "@/global/store";
 import React, { useState, useEffect, useCallback, memo } from "react";
 import { useSelector } from "react-redux";
-import { SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY } from "../PlantillaLogin";
 import { useDelegacionEventos } from "@/hooks/useDelegacionDeEventos";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { AsistenciaDePersonalIDB } from "@/lib/utils/local/db/models/AsistenciaDePersonal/AsistenciaDePersonalIDB";
@@ -20,6 +19,7 @@ import UbicacionFueraDelColegioAlRegistrarAsistenciaPropiaModal from "@/componen
 import NoSePuedeUsarLaptopParaAsistenciaModal from "@/components/modals/AsistenciaPropiaPersonal/NoSePuedeUsarLaptopParaAsistenciaModal";
 import DispositivoSinGPSModal from "@/components/modals/AsistenciaPropiaPersonal/DispositivoSinGPSModal";
 import { DatosAsistenciaCompartidos } from "@/hooks/asistencia-personal-no-directivo/useAsistenciaCompartida";
+import { SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY } from "@/constants/KEYS_LOCAL_STORAGE";
 
 // ✅ INTERFACES SIMPLIFICADAS
 interface EstadoBoton {

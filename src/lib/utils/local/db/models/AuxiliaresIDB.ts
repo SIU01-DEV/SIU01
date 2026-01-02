@@ -20,6 +20,7 @@ import ultimaActualizacionTablasLocalesIDB from "./UltimaActualizacionTablasLoca
 import { DatabaseModificationOperations } from "@/interfaces/shared/DatabaseModificationOperations";
 import { Endpoint_Get_Auxiliares_API01 } from "@/lib/utils/backend/endpoints/api01/Auxiliares";
 import IndexedDBConnection from "@/constants/singleton/IndexedDBConnection";
+import { EncryptorIDB } from "../encryptation/EncryptorIDB";
 
 // Tipo para la entidad (sin atributos de fechas)
 export type IAuxiliarLocal = AuxiliarSinContraseña;
@@ -139,6 +140,7 @@ export class AuxiliaresIDB {
    * Obtiene todos los auxiliares
    * @param includeInactive Si es true, incluye auxiliares inactivos
    * @returns Promesa con el array de auxiliares
+   * @Postcondition El resultado estará desencriptado
    */
   public async getAll(
     includeInactive: boolean = true
@@ -158,7 +160,8 @@ export class AuxiliaresIDB {
       const result = await new Promise<IAuxiliarLocal[]>((resolve, reject) => {
         const request = store.getAll();
 
-        request.onsuccess = () => resolve(request.result as IAuxiliarLocal[]);
+        request.onsuccess = () =>
+          resolve(EncryptorIDB.decryptThis(request.result) as IAuxiliarLocal[]);
         request.onerror = () => reject(request.error);
       });
 
@@ -186,6 +189,7 @@ export class AuxiliaresIDB {
   /**
    * Obtiene todos los DNIs de auxiliares almacenados localmente
    * @returns Promise con array de DNIs
+   * @Postcondition El resultado estará desencriptado
    */
   private async getAllDNIs(): Promise<string[]> {
     try {
@@ -204,7 +208,7 @@ export class AuxiliaresIDB {
             cursor.continue();
           } else {
             // No hay más registros, resolvemos con el array de DNIs
-            resolve(dnis);
+            resolve(EncryptorIDB.decryptThis(dnis));
           }
         };
 
@@ -220,6 +224,7 @@ export class AuxiliaresIDB {
 
   /**
    * Elimina un auxiliar por su DNI
+   * @Precondition Los parametros no estaran encriptados
    * @param dni DNI del auxiliar a eliminar
    * @returns Promise<void>
    */
@@ -231,7 +236,7 @@ export class AuxiliaresIDB {
       );
 
       return new Promise<void>((resolve, reject) => {
-        const request = store.delete(dni);
+        const request = store.delete(EncryptorIDB.encryptThis(dni));
 
         request.onsuccess = () => {
           resolve();
@@ -250,6 +255,7 @@ export class AuxiliaresIDB {
   /**
    * Actualiza o crea auxiliares en lote desde el servidor
    * También elimina registros que ya no existen en el servidor
+   * @Precondition Los parametros no estaran encriptados
    * @param auxiliaresServidor Auxiliares provenientes del servidor
    * @returns Conteo de operaciones: creados, actualizados, eliminados, errores
    */
@@ -308,7 +314,9 @@ export class AuxiliaresIDB {
 
             // Ejecutar la operación put
             await new Promise<void>((resolve, reject) => {
-              const request = store.put(auxiliarServidor);
+              const request = store.put(
+                EncryptorIDB.encryptThis(auxiliarServidor)
+              );
 
               request.onsuccess = () => {
                 if (existeAuxiliar) {
@@ -351,18 +359,20 @@ export class AuxiliaresIDB {
 
   /**
    * Obtiene un auxiliar por su DNI
+   * @Precondition Los parametros no estaran encriptados
    * @param dni DNI del auxiliar
    * @returns Auxiliar encontrado o null
+   * @Postcondition El resultado estará desencriptado
    */
   public async getById(dni: string): Promise<IAuxiliarLocal | null> {
     try {
       const store = await IndexedDBConnection.getStore(this.nombreTablaLocal);
 
       return new Promise<IAuxiliarLocal | null>((resolve, reject) => {
-        const request = store.get(dni);
+        const request = store.get(EncryptorIDB.encryptThis(dni));
 
         request.onsuccess = () => {
-          resolve(request.result || null);
+          resolve(EncryptorIDB.decryptThis(request.result) || null);
         };
 
         request.onerror = () => {

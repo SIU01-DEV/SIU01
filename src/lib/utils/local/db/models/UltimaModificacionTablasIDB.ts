@@ -18,7 +18,7 @@ import {
   MIN_CACHE_LIFETIME_SECONDS,
 } from "@/constants/CACHE_LIFETIME";
 
-class UltimaModificacionTablasIDB {
+export class UltimaModificacionTablasIDB {
   // Información completa de la tabla que incluye nombre local, remoto, descripción, etc.
   private tablaInfo: ITablaInfo = TablasSistema.ULTIMA_MODIFICACION;
 

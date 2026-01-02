@@ -1,7 +1,8 @@
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import { getAvailableCLN01StoresByRol } from "./CLN01_Stores";
 import { SIASIS_CLN01_VERSION } from "@/constants/SIASIS_CLN01_VERSION";
-import { get } from "http";
+import { SEED_KEY_ENCRIPTATION_KEY } from "@/constants/KEYS_LOCAL_STORAGE";
+import { generateKeyFromUsername } from "@/lib/helpers/generators/keys/generateKeyFromUsername";
 
 const nombre_rol_local_storage = "rol";
 const nombre_postfix_local_storage = "PostfixIDBFromUserData";
@@ -13,6 +14,7 @@ export class IndexedDBConnection {
   // Propiedad estática que se inicializa de forma inteligente
   private static _rol: RolesSistema | null = null;
   private static _PostfixIDB: string | null = null;
+  private static _seedKeyEncriptation: string | null = null;
 
   // Usamos la variable de entorno para la versión
   private dbVersionString: string = SIASIS_CLN01_VERSION;
@@ -63,6 +65,14 @@ export class IndexedDBConnection {
    * Setter para el PostfixIDBFromUserData
    */
   public static set PostfixIDBFromUserData(username: string) {
+    // Generando llave determinista a partir del nombre de usuario
+    const _seedKeyEncriptation = generateKeyFromUsername(username);
+    IndexedDBConnection._seedKeyEncriptation = _seedKeyEncriptation;
+    localStorage.setItem(
+      SEED_KEY_ENCRIPTATION_KEY,
+      generateKeyFromUsername(username)
+    );
+
     IndexedDBConnection._PostfixIDB = `S${username.substring(1, 4)}`;
     // Guardar en localStorage si estamos en el cliente
     if (typeof window !== "undefined" && window.localStorage) {
@@ -71,6 +81,17 @@ export class IndexedDBConnection {
         IndexedDBConnection._PostfixIDB
       );
     }
+  }
+
+  /**
+   * Getter para la seedKeyEncriptation
+   */
+  public static get seedKeyEncriptation(): string | null {
+    // Verificar si estamos en el cliente
+    if (!IndexedDBConnection._seedKeyEncriptation) {
+      return localStorage.getItem(SEED_KEY_ENCRIPTATION_KEY);
+    }
+    return IndexedDBConnection._seedKeyEncriptation;
   }
 
   /**

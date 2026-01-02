@@ -23,6 +23,10 @@ import {
   SE_MOSTRARON_COMUNICADOS_DE_HOY_KEY,
   SE_MOSTRARON_COMUNICADOS_DE_HOY_VALOR_INICIAL,
 } from "../modals/Comunicados/ComunicadosDeHoy";
+import {
+  SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY,
+  SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR_INICIAL,
+} from "@/constants/KEYS_LOCAL_STORAGE";
 
 export type RolForLogin =
   | "DIRECTIVO"
@@ -31,10 +35,6 @@ export type RolForLogin =
   | "PROFESOR/TUTOR (Secundaria)"
   | "RESPONSABLE (Padre/Apoderado)"
   | "PERSONAL ADMINISTRATIVO";
-
-export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY =
-  "toltip-tomar-asistencia-personal-SHOWED";
-export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR_INICIAL = "false";
 
 export interface FormularioLogin {
   Nombre_Usuario: string;
