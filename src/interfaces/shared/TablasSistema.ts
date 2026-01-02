@@ -41,8 +41,8 @@ export enum TablasRemoto {
   Tabla_Control_Salida_Profesores_Primaria = "T_Control_Salida_Mensual_Profesores_Primaria",
   Tabla_Control_Entrada_Profesores_Secundaria = "T_Control_Entrada_Mensual_Profesores_Secundaria",
   Tabla_Control_Salida_Profesores_Secundaria = "T_Control_Salida_Mensual_Profesores_Secundaria",
-  Tabla_Control_Entrada_Auxiliar = "T_Control_Entrada_Mensual_Auxiliar",
-  Tabla_Control_Salida_Auxiliar = "T_Control_Salida_Mensual_Auxiliar",
+  Tabla_Control_Entrada_Auxiliares = "T_Control_Entrada_Mensual_Auxiliar",
+  Tabla_Control_Salida_Auxiliares = "T_Control_Salida_Mensual_Auxiliar",
   Tabla_Control_Entrada_Personal_Administrativo = "T_Control_Entrada_Mensual_Personal_Administrativo",
   Tabla_Control_Salida_Personal_Administrativo = "T_Control_Salida_Mensual_Personal_Administrativo",
 
@@ -101,14 +101,14 @@ export enum TablasLocal {
   Tabla_Vacaciones_Interescolares = "vacaciones_interescolares",
 
   // Control de asistencia personal
-  Tabla_Control_Entrada_directivos = "control_entrada_directivos",
-  Tabla_Control_Salida_directivos = "control_salida_directivos",
+  Tabla_Control_Entrada_Directivos = "control_entrada_directivos",
+  Tabla_Control_Salida_Directivos = "control_salida_directivos",
   Tabla_Control_Entrada_Profesores_Primaria = "control_entrada_profesores_primaria",
   Tabla_Control_Salida_Profesores_Primaria = "control_salida_profesores_primaria",
   Tabla_Control_Entrada_Profesores_Secundaria = "control_entrada_profesores_secundaria",
   Tabla_Control_Salida_Profesores_Secundaria = "control_salida_profesores_secundaria",
-  Tabla_Control_Entrada_Auxiliar = "control_entrada_auxiliar",
-  Tabla_Control_Salida_Auxiliar = "control_salida_auxiliar",
+  Tabla_Control_Entrada_Auxiliares = "control_entrada_auxiliar",
+  Tabla_Control_Salida_Auxiliares = "control_salida_auxiliar",
   Tabla_Control_Entrada_Personal_Administrativo = "control_entrada_personal_administrativo",
   Tabla_Control_Salida_Personal_Administrativo = "control_salida_personal_administrativo",
 
@@ -337,14 +337,14 @@ export const TablasSistema = {
     sincronizable: true,
   },
   CONTROL_ENTRADA_AUXILIAR: {
-    nombreRemoto: TablasRemoto.Tabla_Control_Entrada_Auxiliar,
-    nombreLocal: TablasLocal.Tabla_Control_Entrada_Auxiliar,
+    nombreRemoto: TablasRemoto.Tabla_Control_Entrada_Auxiliares,
+    nombreLocal: TablasLocal.Tabla_Control_Entrada_Auxiliares,
     descripcion: "Control de entrada de auxiliares",
     sincronizable: true,
   },
   CONTROL_SALIDA_AUXILIAR: {
-    nombreRemoto: TablasRemoto.Tabla_Control_Salida_Auxiliar,
-    nombreLocal: TablasLocal.Tabla_Control_Salida_Auxiliar,
+    nombreRemoto: TablasRemoto.Tabla_Control_Salida_Auxiliares,
+    nombreLocal: TablasLocal.Tabla_Control_Salida_Auxiliares,
     descripcion: "Control de salida de auxiliares",
     sincronizable: true,
   },

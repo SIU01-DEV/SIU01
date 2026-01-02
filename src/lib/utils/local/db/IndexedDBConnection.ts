@@ -1,6 +1,7 @@
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
-import { CLN01_Stores } from "./CLN01_Stores";
+import { getAvailableCLN01StoresByRol } from "./CLN01_Stores";
 import { SIASIS_CLN01_VERSION } from "@/constants/SIASIS_CLN01_VERSION";
+import { get } from "http";
 
 const nombre_rol_local_storage = "rol";
 const nombre_postfix_local_storage = "PostfixIDBFromUserData";
@@ -62,7 +63,7 @@ export class IndexedDBConnection {
    * Setter para el PostfixIDBFromUserData
    */
   public static set PostfixIDBFromUserData(username: string) {
-    IndexedDBConnection._PostfixIDB = `U${username.substring(1, 3)}`;
+    IndexedDBConnection._PostfixIDB = `S${username.substring(1, 4)}`;
     // Guardar en localStorage si estamos en el cliente
     if (typeof window !== "undefined" && window.localStorage) {
       localStorage.setItem(
@@ -173,7 +174,11 @@ export class IndexedDBConnection {
         // Si hay stores existentes que ya no necesitamos, los eliminamos
         for (let i = 0; i < db.objectStoreNames.length; i++) {
           const storeName = db.objectStoreNames[i];
-          if (!Object.keys(CLN01_Stores).includes(storeName)) {
+          if (
+            !Object.keys(
+              getAvailableCLN01StoresByRol(IndexedDBConnection._rol!)
+            ).includes(storeName)
+          ) {
             db.deleteObjectStore(storeName);
           }
         }
@@ -208,16 +213,32 @@ export class IndexedDBConnection {
    * Configura la estructura de la base de datos
    */
   private configureDatabase(db: IDBDatabase): void {
+    if (!IndexedDBConnection._rol) {
+      throw new Error(
+        "El rol no está definido al configurar la base de datos con el esquema adecuado."
+      );
+    }
+
+    const CLN01_StoresForThisRol = getAvailableCLN01StoresByRol(
+      IndexedDBConnection._rol!
+    );
+
+    console.log(CLN01_StoresForThisRol);
+
     // Crear los object stores y sus índices
-    for (const [storeName, config] of Object.entries(CLN01_Stores)) {
+    for (const [storeName, config] of Object.entries(CLN01_StoresForThisRol)) {
       if (!db.objectStoreNames.contains(storeName)) {
         const store = db.createObjectStore(storeName, {
-          keyPath: config.keyPath,
-          autoIncrement: config.autoIncrement,
+          keyPath: config.objectStore.keyPath,
+          autoIncrement: config.objectStore.autoIncrement,
         });
-
+        console.log(
+          "INDICES PARA STORE ==================== :",
+          storeName,
+          config.objectStore.indexes
+        );
         // Crear los índices
-        for (const index of config.indexes) {
+        for (const index of config.objectStore.indexes) {
           store.createIndex(index.name, index.keyPath, index.options);
         }
       }
