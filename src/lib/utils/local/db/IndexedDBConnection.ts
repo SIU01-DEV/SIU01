@@ -253,11 +253,6 @@ export class IndexedDBConnection {
           keyPath: config.objectStore.keyPath,
           autoIncrement: config.objectStore.autoIncrement,
         });
-        console.log(
-          "INDICES PARA STORE ==================== :",
-          storeName,
-          config.objectStore.indexes
-        );
         // Crear los índices
         for (const index of config.objectStore.indexes) {
           store.createIndex(index.name, index.keyPath, index.options);

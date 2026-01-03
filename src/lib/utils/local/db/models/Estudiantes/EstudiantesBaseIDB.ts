@@ -22,6 +22,7 @@ import AllErrorTypes, {
   SystemErrorTypes,
   UserErrorTypes,
 } from "@/interfaces/shared/errors";
+import { EncryptorIDB } from "../../encryptation/EncryptorIDB";
 
 // Filtros para búsqueda basados en los atributos base de T_Estudiantes
 export interface IEstudianteBaseFilter {
@@ -100,6 +101,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Actualiza estudiantes de un subconjunto específico solo si los datos locales son más antiguos que la fecha de obtención del servidor
+   * @Precondition Los parametros no estaran encriptados
    * @param filtro Filtro que identifica el subconjunto de estudiantes que se va a reemplazar completamente
    * @param estudiantes Lista de estudiantes obtenidos del servidor que cumplen con el filtro
    * @param fechaObtenciones Fecha en formato timestamp string UTC de cuándo se obtuvieron estos datos del servidor
@@ -224,15 +226,18 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
   }
 
   /**
+   * @Precondition El parametro no estara encriptado
    * Obtiene un estudiante por su ID - SIMPLE como AuxiliaresIDB
+   * @Postcondition El resultado estará desencriptado
    */
   public async getEstudiantePorId(idEstudiante: string): Promise<T | null> {
     try {
       const store = await IndexedDBConnection.getStore(this.tablaEstudiantes);
 
       return new Promise<T | null>((resolve, reject) => {
-        const request = store.get(idEstudiante);
-        request.onsuccess = () => resolve(request.result || null);
+        const request = store.get(EncryptorIDB.encryptThis(idEstudiante));
+        request.onsuccess = () =>
+          resolve(EncryptorIDB.decryptThis(request.result) || null);
         request.onerror = () => reject(request.error);
       });
     } catch (error) {
@@ -250,6 +255,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Obtiene todos los estudiantes CON SYNC automático
+   * @Postcondition El resultado estará desencriptado
    */
   public async getTodosLosEstudiantes(
     includeInactive: boolean = false
@@ -268,7 +274,8 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
       const result = await new Promise<T[]>((resolve, reject) => {
         const request = store.getAll();
-        request.onsuccess = () => resolve(request.result as T[]);
+        request.onsuccess = () =>
+          resolve(EncryptorIDB.decryptThis(request.result) as T[]);
         request.onerror = () => reject(request.error);
       });
 
@@ -292,6 +299,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
   }
 
   /**
+   * @Precondition El parametro no estara encriptado
    * Busca estudiantes por nombre CON SYNC automático
    */
   public async buscarPorNombre(
@@ -318,7 +326,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value as T;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value) as T;
 
             if (!includeInactive && !estudiante.Estado) {
               cursor.continue();
@@ -364,8 +372,10 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Filtra estudiantes por estado (activo/inactivo)
+   * @Precondition El parametro no estara encriptado
    * @param estado Estado a filtrar (true = activo, false = inactivo)
    * @returns Array de estudiantes con el estado especificado
+   * @Postcondition El resultado estará desencriptado
    */
   public async filtrarPorEstado(estado: boolean): Promise<T[]> {
     this.setIsSomethingLoading?.(true);
@@ -391,7 +401,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value as T;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value) as T;
             if (estudiante.Estado === estado) {
               estudiantes.push(estudiante);
             }
@@ -424,9 +434,11 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Filtra estudiantes por aula
+   * @Precondition Los parametros no estaran encriptados
    * @param idAula ID del aula
    * @param includeInactive Si incluir estudiantes inactivos
    * @returns Array de estudiantes del aula especificada
+   * @Postcondition El resultado estará desencriptado
    */
   public async filtrarPorAula(
     idAula: string,
@@ -455,7 +467,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value as T;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value) as T;
 
             // Filtrar por aula y estado
             if (
@@ -497,9 +509,11 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Busca estudiantes aplicando múltiples filtros basados en T_Estudiantes
+   * @Precondition Los parametros no estaran encriptados
    * @param filtros Filtros basados en los atributos base
    * @param includeInactive Si incluir estudiantes inactivos
    * @returns Array de estudiantes que cumplen todos los filtros
+   * @Postcondition El resultado estará desencriptado
    */
   public async buscarConFiltros(
     filtros: IEstudianteBaseFilter,
@@ -528,7 +542,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value as T;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value) as T;
             let cumpleFiltros = true;
 
             // Filtro por estado si no se incluyen inactivos
@@ -651,6 +665,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
   /**
    * Actualiza o crea estudiantes en lote desde el servidor usando filtros para reemplazo específico
    * Método mejorado que reemplaza completamente el subconjunto que cumple con el filtro
+   * @Precondition Los parametros no estaran encriptados
    */
   protected async upsertFromServerWithFilter(
     filtro: IEstudianteBaseFilter,
@@ -711,7 +726,9 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
             );
 
             await new Promise<void>((resolve, reject) => {
-              const request = store.put(estudianteServidor);
+              const request = store.put(
+                EncryptorIDB.encryptThis(estudianteServidor)
+              );
 
               request.onsuccess = () => {
                 if (existeEstudiante) {
@@ -754,6 +771,8 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Obtiene estudiantes locales que cumplen con un filtro específico
+   * @Precondition El parametro no estara encriptado
+   * @Postcondition El resultado estará desencriptado
    */
   private async getEstudiantesQueCumplenFiltro(
     filtro: IEstudianteBaseFilter
@@ -769,7 +788,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value as T;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value) as T;
             let cumpleFiltro = true;
 
             // Aplicar filtros específicos (solo los que están definidos)
@@ -841,6 +860,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
   /**
    * Obtiene todos los IDs de estudiantes en la tabla
    * @returns Array de IDs de estudiantes
+   * @Postcondition El resultado estará desencriptado
    */
   protected async getAllIds(): Promise<string[]> {
     try {
@@ -857,7 +877,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
             ids.push(cursor.value.Id_Estudiante);
             cursor.continue();
           } else {
-            resolve(ids);
+            resolve(EncryptorIDB.decryptThis(ids));
           }
         };
 
@@ -871,6 +891,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
 
   /**
    * Elimina un estudiante por su ID
+   * @Precondition El parametro no estara encriptado
    * @param idEstudiante ID del estudiante a eliminar
    */
   protected async deleteById(idEstudiante: string): Promise<void> {
@@ -881,7 +902,7 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
       );
 
       return new Promise<void>((resolve, reject) => {
-        const request = store.delete(idEstudiante);
+        const request = store.delete(EncryptorIDB.encryptThis(idEstudiante));
 
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
@@ -898,6 +919,8 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
   /**
    * Actualiza o crea estudiantes en lote desde el servidor
    * Método común que pueden usar todas las clases hijas
+   * @Precondition Los parametros no estaran encriptados
+   * @Postcondition Se guardaran los resultados encriptados
    */
   protected async upsertFromServer(estudiantesServidor: T[]): Promise<{
     created: number;
@@ -946,7 +969,9 @@ export class BaseEstudiantesIDB<T extends T_Estudiantes = T_Estudiantes> {
             );
 
             await new Promise<void>((resolve, reject) => {
-              const request = store.put(estudianteServidor);
+              const request = store.put(
+                EncryptorIDB.encryptThis(estudianteServidor)
+              );
 
               request.onsuccess = () => {
                 if (existeEstudiante) {

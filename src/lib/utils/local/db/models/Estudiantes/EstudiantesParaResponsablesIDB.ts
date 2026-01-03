@@ -10,6 +10,8 @@ import IndexedDBConnection from "../../IndexedDBConnection";
 import AllErrorTypes, { SystemErrorTypes } from "@/interfaces/shared/errors";
 import { Endpoint_Get_MisEstudiantesRelacionados_API02 } from "@/lib/utils/backend/endpoints/api02/Estudiantes";
 import { EstudianteDelResponsable } from "@/interfaces/shared/Estudiantes";
+import { EncryptorIDB } from "../../encryptation/EncryptorIDB";
+import { RelacionesEstudianteResponsable } from "@/interfaces/shared/RelacionesEstudianteResponsable";
 
 // Filtros específicos para estudiantes de responsables (extiende los filtros base)
 export interface IEstudianteResponsableFilter extends IEstudianteBaseFilter {
@@ -78,6 +80,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   /**
    * Limpia completamente todos los estudiantes del responsable de la tabla común
    * Esto asegura que no queden datos obsoletos
+   * @Postcondition No quedarán estudiantes con Tipo_Relacion en la tabla común
    */
   private async limpiarEstudiantesDelResponsableCompleto(): Promise<void> {
     try {
@@ -98,7 +101,9 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
           if (cursor) {
             const estudiante = cursor.value;
             if (estudiante.Tipo_Relacion) {
-              estudiantesAEliminar.push(estudiante.Id_Estudiante);
+              estudiantesAEliminar.push(
+                EncryptorIDB.decryptThis(estudiante.Id_Estudiante)
+              );
             }
             cursor.continue();
           } else {
@@ -157,7 +162,9 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
             );
 
             await new Promise<void>((resolve, reject) => {
-              const request = store.put(estudianteServidor);
+              const request = store.put(
+                EncryptorIDB.encryptThis(estudianteServidor)
+              );
 
               request.onsuccess = () => {
                 if (existeEstudiante) {
@@ -363,6 +370,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   /**
    * Obtiene estudiantes que tienen el atributo Tipo_Relacion desde la tabla común
    * @returns Array de estudiantes con tipo de relación
+   * @Postcondition los resultados estarán desencriptados
    */
   private async obtenerEstudiantesConTipoRelacion(): Promise<
     EstudianteDelResponsable[]
@@ -378,7 +386,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value);
             // Solo incluir estudiantes que tengan el atributo Tipo_Relacion
             if (estudiante.Tipo_Relacion && estudiante.Estado === true) {
               estudiantes.push(estudiante as EstudianteDelResponsable);
@@ -402,13 +410,15 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
 
   /**
    * Busca estudiantes del responsable por tipo de relación específico
+   * @Precondition los parametros no estaran encriptados
    * @param tipoRelacion Tipo de relación a filtrar ("HIJO" o "A_CARGO")
    * @param includeInactive Si incluir estudiantes inactivos
    * @returns Array de estudiantes con el tipo de relación especificado
+   * @Postcondition los resultados estarán desencriptados
    */
   public async filtrarPorTipoRelacion(
-    tipoRelacion: string,
-    includeInactive: boolean = false
+    tipoRelacion: RelacionesEstudianteResponsable,
+    includeInactive: boolean = true
   ): Promise<EstudianteDelResponsable[]> {
     this.setIsSomethingLoading?.(true);
     this.setError?.(null);
@@ -427,7 +437,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
             const cursor = (event.target as IDBRequest)
               .result as IDBCursorWithValue;
             if (cursor) {
-              const estudiante = cursor.value;
+              const estudiante = EncryptorIDB.decryptThis(cursor.value);
 
               // Filtrar por tipo de relación y estado
               if (
@@ -468,9 +478,11 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   /**
    * Busca estudiantes aplicando filtros específicos de responsable
    * Extiende la funcionalidad base agregando filtrado por Tipo_Relacion
+   * @Precondition Los parametros no estarán encriptados
    * @param filtros Filtros específicos para estudiantes de responsable
    * @param includeInactive Si incluir estudiantes inactivos
    * @returns Array de estudiantes que cumplen los filtros
+   * @Postcondition los resultados estarán desencriptados
    */
   public async buscarConFiltrosResponsable(
     filtros: IEstudianteResponsableFilter,
@@ -493,7 +505,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
             const cursor = (event.target as IDBRequest)
               .result as IDBCursorWithValue;
             if (cursor) {
-              const estudiante = cursor.value;
+              const estudiante = EncryptorIDB.decryptThis(cursor.value);
               let cumpleFiltros = true;
 
               // Solo considerar estudiantes que tengan Tipo_Relacion
@@ -589,7 +601,10 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   public async obtenerSoloHijos(
     includeInactive: boolean = false
   ): Promise<EstudianteDelResponsable[]> {
-    return this.filtrarPorTipoRelacion("HIJO", includeInactive);
+    return this.filtrarPorTipoRelacion(
+      RelacionesEstudianteResponsable.Padre_de_Familia,
+      includeInactive
+    );
   }
 
   /**
@@ -600,7 +615,10 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   public async obtenerSoloACargo(
     includeInactive: boolean = false
   ): Promise<EstudianteDelResponsable[]> {
-    return this.filtrarPorTipoRelacion("A_CARGO", includeInactive);
+    return this.filtrarPorTipoRelacion(
+      RelacionesEstudianteResponsable.Apoderado,
+      includeInactive
+    );
   }
 
   /**
@@ -610,7 +628,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
    * @returns Número de estudiantes con el tipo de relación especificado
    */
   public async contarEstudiantesPorTipoRelacion(
-    tipoRelacion?: string,
+    tipoRelacion?: RelacionesEstudianteResponsable,
     includeInactive: boolean = false
   ): Promise<number> {
     try {
@@ -660,11 +678,12 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   }
 
   /**
-   * MÉTODO SIMPLE: Obtiene un estudiante del responsable con sync automático
+   * @Precondition idEstudiante no estará encriptado
+   * Obtiene un estudiante del responsable con sync automático
+   * @Postcondition el resultado estará desencriptado
    */
   public async obtenerMiEstudiantePorId(
-    idEstudiante: string,
-    forzarActualizacion: boolean = false
+    idEstudiante: string
   ): Promise<EstudianteDelResponsable | null> {
     this.setIsSomethingLoading?.(true);
     this.setError?.(null);
@@ -726,8 +745,14 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
   }> {
     try {
       const [hijos, aCargo] = await Promise.all([
-        this.contarEstudiantesPorTipoRelacion("HIJO", includeInactive),
-        this.contarEstudiantesPorTipoRelacion("A_CARGO", includeInactive),
+        this.contarEstudiantesPorTipoRelacion(
+          RelacionesEstudianteResponsable.Padre_de_Familia,
+          includeInactive
+        ),
+        this.contarEstudiantesPorTipoRelacion(
+          RelacionesEstudianteResponsable.Apoderado,
+          includeInactive
+        ),
       ]);
 
       return {
@@ -766,7 +791,7 @@ export class EstudiantesParaResponsablesIDB extends BaseEstudiantesIDB<Estudiant
           const cursor = (event.target as IDBRequest)
             .result as IDBCursorWithValue;
           if (cursor) {
-            const estudiante = cursor.value;
+            const estudiante = EncryptorIDB.decryptThis(cursor.value);
             if (estudiante.Tipo_Relacion) {
               estudiantesAEliminar.push(estudiante.Id_Estudiante);
             }

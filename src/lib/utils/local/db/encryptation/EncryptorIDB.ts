@@ -69,7 +69,10 @@ export class EncryptorIDB {
       const decryptValue = xorCipher(anyValue.toString(), key);
       const numberDecryptValue = Number(decryptValue);
 
-      return (isNaN(numberDecryptValue) || decryptValue.trim() === ""
+      return (isNaN(numberDecryptValue) ||
+      // En caso la longitud no coincida al transformar a número, devolvemos el string original
+      numberDecryptValue.toString().length !== decryptValue.length ||
+      decryptValue.trim() === ""
         ? decryptValue
         : numberDecryptValue) as unknown as T;
     }

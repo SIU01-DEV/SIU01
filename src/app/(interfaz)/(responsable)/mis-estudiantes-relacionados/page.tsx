@@ -62,7 +62,7 @@ const MisEstudiantesRelacionados = () => {
             if (estudiante.Id_Aula === undefined)
               return { ...estudiante, aula: undefined };
             const aula = aulasObtenidas.find(
-              (aula) => aula.Id_Aula === estudiante.Id_Aula
+              (aula) => aula.Id_Aula == estudiante.Id_Aula
             );
             return { ...estudiante, aula };
           });
