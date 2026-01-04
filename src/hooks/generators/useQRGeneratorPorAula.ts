@@ -7,6 +7,11 @@ import { compartirArchivoEnBlobPorNavegador } from "@/lib/helpers/others/compart
 import { BaseEstudiantesIDB } from "@/lib/utils/local/db/models/Estudiantes/EstudiantesBaseIDB";
 import { BaseAulasIDB } from "@/lib/utils/local/db/models/Aulas/AulasBase";
 import { NivelEducativo } from "@/interfaces/shared/NivelEducativo";
+import {
+  EstudianteConAula,
+  EstudianteConAulaYRelacion,
+} from "@/interfaces/shared/Estudiantes";
+import { RelacionesEstudianteResponsable } from "@/interfaces/shared/RelacionesEstudianteResponsable";
 
 export const useQRGeneratorPorAula = () => {
   const hiddenCardsRef = useRef<HTMLDivElement>(null);
@@ -221,11 +226,13 @@ export const useQRGeneratorPorAula = () => {
         hiddenCardsRef.current
       ); // Convertir estudiantes a formato compatible con EstudianteDelResponsableConAula
 
-      const estudiantesConAula = estudiantesDelAula.map((estudiante) => ({
-        ...estudiante,
-        Tipo_Relacion: "Estudiante", // Valor por defecto
-        aula: aulaSeleccionada,
-      })); // Generar PDF con todos los estudiantes
+      const estudiantesConAula = estudiantesDelAula.map(
+        (estudiante) =>
+          ({
+            ...estudiante,
+            aula: aulaSeleccionada,
+          } as EstudianteConAula)
+      ); // Generar PDF con todos los estudiantes
 
       const pdfBlob = await pdfService.generatePDFMultiplesEstudiantes(
         estudiantesConAula

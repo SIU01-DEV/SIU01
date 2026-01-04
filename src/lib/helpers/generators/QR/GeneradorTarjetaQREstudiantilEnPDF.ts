@@ -4,7 +4,7 @@ import {
   generarQREnElementoHTML,
   QR_ESTUDIANTIL_PDF_CONFIG,
 } from "./generarQREnElementoHTML";
-import { EstudianteConAulaYRelacion } from "@/interfaces/shared/Estudiantes";
+import { EstudianteConAula, EstudianteConAulaYRelacion } from "@/interfaces/shared/Estudiantes";
 
 export class GeneradorTarjetaQREstudiantilEnPDF {
   private hiddenContainer: HTMLDivElement;
@@ -56,7 +56,7 @@ export class GeneradorTarjetaQREstudiantilEnPDF {
   private async generateQRForCard(
     container: HTMLDivElement,
     index: number,
-    estudiante: EstudianteConAulaYRelacion
+    estudiante: EstudianteConAula
   ): Promise<void> {
     const qrContainer = container.querySelector(
       `#qr-container-${index}`
@@ -159,7 +159,7 @@ export class GeneradorTarjetaQREstudiantilEnPDF {
    * @returns Promise<Blob> PDF con todas las tarjetas
    */
   async generatePDFMultiplesEstudiantes(
-    estudiantes: EstudianteConAulaYRelacion[]
+    estudiantes: EstudianteConAula[]
   ): Promise<Blob> {
     if (!window.jspdf || !window.html2canvas) {
       throw new Error("Required libraries not loaded");

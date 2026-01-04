@@ -326,14 +326,14 @@ model T_Ajustes_Generales_Sistema {
   @@map("T_Ajustes_Generales_Sistema")
 }
 
-model T_Horarios_Asistencia {
+model T_Horarios_Generales {
   Id_Horario          Int      @id @default(autoincrement())
   Nombre              String   @unique @db.VarChar(100)
   Valor               DateTime @db.Time
   Descripcion         String   @db.Text
   Ultima_Modificacion DateTime @default(now())
 
-  @@map("T_Horarios_Asistencia")
+  @@map("T_Horarios_Generales")
 }
 
 model T_Eventos {
@@ -563,7 +563,7 @@ model T_Modificaciones_Especificas {
 model T_Reportes_Asistencia_Escolar {
   Combinacion_Parametros_Reporte String   @id @db.VarChar(40)
   Estado_Reporte                 String   @db.VarChar(20)
-  Datos_Google_Drive_Id          String?   @db.Text
+  Datos_Google_Drive_Id          String?  @db.Text
   Fecha_Generacion               DateTime @default(now())
   Rol_Usuario                    String   @db.VarChar(2)
   Id_Usuario                     String   @db.VarChar(20)

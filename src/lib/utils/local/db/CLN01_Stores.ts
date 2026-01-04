@@ -1020,7 +1020,7 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
     ],
   },
 
-  [TablasLocal.Tabla_Horarios_Asistencia]: {
+  [TablasLocal.Tabla_Horarios_Generales]: {
     objectStore: {
       keyPath: "Id_Horario",
       autoIncrement: true,
