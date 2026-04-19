@@ -128,7 +128,7 @@ export class IndexedDBConnection {
    * Obtiene el nombre de la base de datos basado en el rol actual
    */
   private get dbName(): string {
-    return `SIASIS-CLN01-${IndexedDBConnection.rol}-${IndexedDBConnection.PostfixIDBFromUserData}`;
+    return `SIASIS-CLN01-${(IndexedDBConnection.rol)}-${IndexedDBConnection.PostfixIDBFromUserData}`;
   }
 
   /**

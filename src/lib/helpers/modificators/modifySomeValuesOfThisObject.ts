@@ -5,7 +5,7 @@
 export function modifySomeValuesOfThisObject<T>(
   obj: T,
   matchers: (string | RegExp)[],
-  modifier: (value: string | number) => string | number
+  modifier: (value: string | number, key: string) => string | number,
 ): T {
   // 1. Si no es un objeto o es null, devolvemos el valor tal cual (caso base)
   if (obj === null || typeof obj !== "object") {
@@ -15,7 +15,7 @@ export function modifySomeValuesOfThisObject<T>(
   // 2. Manejo de Arrays: procesamos cada elemento recursivamente
   if (Array.isArray(obj)) {
     return obj.map((item) =>
-      modifySomeValuesOfThisObject(item, matchers, modifier)
+      modifySomeValuesOfThisObject(item, matchers, modifier),
     ) as any;
   }
 
@@ -27,7 +27,7 @@ export function modifySomeValuesOfThisObject<T>(
 
     // Verificamos si la llave coincide con algún string o RegExp del array
     const isMatch = matchers.some((matcher) =>
-      matcher instanceof RegExp ? matcher.test(key) : matcher === key
+      matcher instanceof RegExp ? matcher.test(key) : matcher === key,
     );
 
     // Verificamos si el valor es un "primitivo objetivo" (string o number)
@@ -35,7 +35,7 @@ export function modifySomeValuesOfThisObject<T>(
 
     if (isMatch && isPrimitive) {
       // Aplicamos el modificador si pasa ambas validaciones
-      result[key] = modifier(value as string | number);
+      result[key] = modifier(value as string | number, key);
     } else if (typeof value === "object" && value !== null) {
       // Si es un objeto/array, entramos recursivamente
       result[key] = modifySomeValuesOfThisObject(value, matchers, modifier);
