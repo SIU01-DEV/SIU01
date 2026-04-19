@@ -22,6 +22,8 @@ const sensiblePropertiesToEncryptInIDB: (string | RegExp)[] = [
   "Descripcion",
 ];
 
+const propiedadesSiempreTexto = ["Id_Estudiante", "Id_Auxiliar", "Id_Profesor_Primaria", "Id_Profesor_Secundaria", "Id_Aula", "Id_Personal_Administrativo", "Identificador_Nacional"];
+
 export class EncryptorIDB {
   public static getEncriptionKey(): string {
     const seedKeyEncriptation = IndexedDBConnection.seedKeyEncriptation;
@@ -37,7 +39,7 @@ export class EncryptorIDB {
     // Si es un array, encriptamos todos sus elementos "si o si"
     if (Array.isArray(anyValue)) {
       return anyValue.map((item) =>
-        EncryptorIDB.encryptThis(item)
+        EncryptorIDB.encryptThis(item),
       ) as unknown as T;
     }
 
@@ -50,7 +52,7 @@ export class EncryptorIDB {
     return modifySomeValuesOfThisObject(
       anyValue,
       sensiblePropertiesToEncryptInIDB,
-      (value: string | number) => xorCipher(value.toString(), key)
+      (value: string | number) => xorCipher(value.toString(), key),
     );
   }
 
@@ -60,13 +62,14 @@ export class EncryptorIDB {
     // Si es un array, desencriptamos todos sus elementos "si o si"
     if (Array.isArray(anyValue)) {
       return anyValue.map((item) =>
-        EncryptorIDB.decryptThis(item)
+        EncryptorIDB.decryptThis(item),
       ) as unknown as T;
     }
 
     // Caso Primitivo: string o number
     if (typeof anyValue === "string" || typeof anyValue === "number") {
       const decryptValue = xorCipher(anyValue.toString(), key);
+
       const numberDecryptValue = Number(decryptValue);
 
       return (isNaN(numberDecryptValue) ||
@@ -81,14 +84,18 @@ export class EncryptorIDB {
     return modifySomeValuesOfThisObject(
       anyValue,
       sensiblePropertiesToEncryptInIDB,
-      (value: string | number) => {
+      (value: string | number, propertyKey: string) => {
         const decryptValue = xorCipher(value.toString(), key);
+        if (propiedadesSiempreTexto.includes(propertyKey)) {
+          return decryptValue;
+        }
+
         const numberDecryptValue = Number(decryptValue);
 
         return isNaN(numberDecryptValue) || decryptValue.trim() === ""
           ? decryptValue
           : numberDecryptValue;
-      }
+      },
     );
   }
 }

@@ -82,7 +82,7 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
       RolesSistema.Directivo,
       RolesSistema.Auxiliar,
       RolesSistema.ProfesorPrimaria,
-      RolesSistema.ProfesorSecundaria,
+      RolesSistema.Tutor,
       RolesSistema.Responsable,
     ],
   },
@@ -303,60 +303,6 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
       RolesSistema.Tutor,
     ],
   },
-
-  // ========================================
-  // HORARIOS POR DÍAS (NUEVAS TABLAS)
-  // ========================================
-
-  // ✅ AGREGADO: Horarios por días - Personal Administrativo
-  // horarios_por_dias_personal_administrativo: {
-  //   keyPath: "Id_Horario_Por_Dia_P_Administrativo",
-  //   autoIncrement: true,
-  //   indexes: [
-  //     {
-  //       name: "por_personal_administrativo",
-  //       keyPath: "Id_Personal_Administrativo", // Cambió de Id_ a Id_
-  //       options: { unique: false },
-  //     },
-  //     { name: "por_dia", keyPath: "Dia", options: { unique: false } },
-  //     {
-  //       name: "por_personal_dia",
-  //       keyPath: ["Id_Personal_Administrativo", "Dia"], // Cambió de Id_ a Id_
-  //       options: { unique: true },
-  //     },
-  //     {
-  //       name: "por_hora_inicio",
-  //       keyPath: "Hora_Inicio",
-  //       options: { unique: false },
-  //     },
-  //     { name: "por_hora_fin", keyPath: "Hora_Fin", options: { unique: false } },
-  //   ],
-  // },
-
-  // ✅ AGREGADO: Horarios por días - Directivos
-  // horarios_por_dias_directivos: {
-  //   keyPath: "Id_Horario_Por_Dia_Directivo",
-  //   autoIncrement: true,
-  //   indexes: [
-  //     {
-  //       name: "por_directivo",
-  //       keyPath: "Id_Directivo", // Mantiene Id_Directivo (es diferente)
-  //       options: { unique: false },
-  //     },
-  //     { name: "por_dia", keyPath: "Dia", options: { unique: false } },
-  //     {
-  //       name: "por_directivo_dia",
-  //       keyPath: ["Id_Directivo", "Dia"],
-  //       options: { unique: true },
-  //     },
-  //     {
-  //       name: "por_hora_inicio",
-  //       keyPath: "Hora_Inicio",
-  //       options: { unique: false },
-  //     },
-  //     { name: "por_hora_fin", keyPath: "Hora_Fin", options: { unique: false } },
-  //   ],
-  // },
 
   // ========================================
   // CONTROL DE ASISTENCIA DEL PERSONAL
@@ -986,6 +932,43 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
       RolesSistema.Responsable,
     ],
   },
+
+  [TablasLocal.Tabla_Recreos]: {
+    objectStore: {
+      keyPath: "Id_Recreo",
+      autoIncrement: true,
+      indexes: [
+        {
+          name: "por_nivel_educativo",
+          keyPath: "Nivel_Educativo",
+          options: { unique: false },
+        },
+        {
+          name: "por_bloque_inicio",
+          keyPath: "Bloque_Inicio",
+          options: { unique: false },
+        },
+        {
+          name: "por_ultima_modificacion",
+          keyPath: "Ultima_Modificacion",
+          options: { unique: false },
+        },
+        {
+          name: "por_nivel_bloque",
+          keyPath: ["Nivel_Educativo", "Bloque_Inicio"],
+          options: { unique: false },
+        },
+      ],
+    },
+    rolesPermitidos: [
+      RolesSistema.Directivo,
+      RolesSistema.ProfesorPrimaria,
+      RolesSistema.Auxiliar,
+      RolesSistema.ProfesorSecundaria,
+      RolesSistema.Tutor,
+    ],
+  },
+
   // ========================================
   // CONFIGURACIÓN Y ADMINISTRACIÓN
   // ========================================
@@ -1037,6 +1020,78 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
       RolesSistema.PersonalAdministrativo,
       RolesSistema.Responsable,
     ],
+  },
+  [TablasLocal.Tabla_Horarios_Por_Dias_Personal_Administrativo]: {
+    objectStore: {
+      keyPath: "Id_Horario_Por_Dia_P_Administrativo",
+      autoIncrement: true,
+      indexes: [
+        {
+          name: "por_personal_administrativo",
+          keyPath: "Id_Personal_Administrativo",
+          options: { unique: false },
+        },
+        {
+          name: "por_dia",
+          keyPath: "Dia",
+          options: { unique: false },
+        },
+        {
+          name: "por_personal_dia",
+          keyPath: ["Id_Personal_Administrativo", "Dia"],
+          options: { unique: true },
+        },
+        {
+          name: "por_hora_inicio",
+          keyPath: "Hora_Inicio",
+          options: { unique: false },
+        },
+        {
+          name: "por_hora_fin",
+          keyPath: "Hora_Fin",
+          options: { unique: false },
+        },
+      ],
+    },
+    rolesPermitidos: [
+      RolesSistema.Directivo,
+      RolesSistema.PersonalAdministrativo,
+    ],
+  },
+
+  [TablasLocal.Tabla_Horarios_Por_Dias_Directivos]: {
+    objectStore: {
+      keyPath: "Id_Horario_Por_Dia_Directivo",
+      autoIncrement: true,
+      indexes: [
+        {
+          name: "por_directivo",
+          keyPath: "Id_Directivo",
+          options: { unique: false },
+        },
+        {
+          name: "por_dia",
+          keyPath: "Dia",
+          options: { unique: false },
+        },
+        {
+          name: "por_directivo_dia",
+          keyPath: ["Id_Directivo", "Dia"],
+          options: { unique: true },
+        },
+        {
+          name: "por_hora_inicio",
+          keyPath: "Hora_Inicio",
+          options: { unique: false },
+        },
+        {
+          name: "por_hora_fin",
+          keyPath: "Hora_Fin",
+          options: { unique: false },
+        },
+      ],
+    },
+    rolesPermitidos: [RolesSistema.Directivo],
   },
 
   [TablasLocal.Tabla_Eventos]: {
@@ -1458,7 +1513,6 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
       ],
     },
     rolesPermitidos: [
-      RolesSistema.Directivo,
       RolesSistema.ProfesorPrimaria,
       RolesSistema.Auxiliar,
     ],
