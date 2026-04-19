@@ -59,10 +59,6 @@ export enum TablasRemoto {
 
   // Reportes
   Tabla_Reportes_Asistencia_Escolar = "T_Reportes_Asistencia_Escolar",
-
-  Tabla_Recreos = "T_Recreos",
-  Tabla_Horarios_Por_Dias_Personal_Administrativo = "T_Horarios_Por_Dias_Personal_Administrativo",
-  Tabla_Horarios_Por_Dias_Directivos = "T_Horarios_Por_Dias_Directivos",
 }
 
 /**
@@ -143,10 +139,6 @@ export enum TablasLocal {
 
   // Reportes
   Tabla_Reportes_Asistencia_Escolar = "reportes_asistencia_escolar",
-
-  Tabla_Recreos = "recreos",
-  Tabla_Horarios_Por_Dias_Personal_Administrativo = "horarios_por_dias_personal_administrativo",
-  Tabla_Horarios_Por_Dias_Directivos = "horarios_por_dias_directivos",
 }
 
 /**
@@ -376,7 +368,7 @@ export const TablasSistema = {
     descripcion: "Fechas importantes del año escolar",
     sincronizable: true,
   },
-  HORARIOS_GENERALES: {
+  HORARIOS_ASISTENCIA: {
     nombreRemoto: TablasRemoto.Tabla_Horarios_Generales,
     nombreLocal: TablasLocal.Tabla_Horarios_Generales,
     descripcion: "Configuración de horarios para toma de asistencia",
@@ -461,27 +453,6 @@ export const TablasSistema = {
     nombreLocal: TablasLocal.Tabla_Reportes_Asistencia_Escolar,
     descripcion:
       "Reportes de asistencia escolar generados y almacenados en cache",
-    sincronizable: true,
-  },
-
-  RECREOS: {
-    nombreRemoto: TablasRemoto.Tabla_Recreos,
-    nombreLocal: TablasLocal.Tabla_Recreos,
-    descripcion: "Configuración de horarios de recreos por nivel educativo",
-    sincronizable: true,
-  },
-
-  HORARIOS_POR_DIAS_PERSONAL_ADMINISTRATIVO: {
-    nombreRemoto: TablasRemoto.Tabla_Horarios_Por_Dias_Personal_Administrativo,
-    nombreLocal: TablasLocal.Tabla_Horarios_Por_Dias_Personal_Administrativo,
-    descripcion: "Horarios laborales por día para personal administrativo",
-    sincronizable: true,
-  },
-
-  HORARIOS_POR_DIAS_DIRECTIVOS: {
-    nombreRemoto: TablasRemoto.Tabla_Horarios_Por_Dias_Directivos,
-    nombreLocal: TablasLocal.Tabla_Horarios_Por_Dias_Directivos,
-    descripcion: "Horarios laborales por día para directivos",
     sincronizable: true,
   },
 };
