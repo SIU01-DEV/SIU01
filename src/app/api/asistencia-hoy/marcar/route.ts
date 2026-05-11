@@ -18,7 +18,7 @@ import {
   RegistrarAsistenciaIndividualSuccessResponse,
   TipoAsistencia,
 } from "@/interfaces/shared/AsistenciaRequests";
-import { HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS } from "@/constants/expirations";
+import { HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS, MINUTO_MAXIMO_EXPIRACION_PARA_REGISTROS_EN_REDIS } from "@/constants/expirations";
 import {
   obtenerFechaActualPeru,
   obtenerFechaHoraActualPeru,
@@ -246,7 +246,7 @@ const calcularSegundosHastaExpiracion = async (): Promise<number> => {
   const fechaExpiracion = new Date(fechaActualPeru);
   fechaExpiracion.setHours(
     HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS,
-    0,
+    MINUTO_MAXIMO_EXPIRACION_PARA_REGISTROS_EN_REDIS,
     0,
     0
   );
