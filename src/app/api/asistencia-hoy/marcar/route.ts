@@ -18,12 +18,16 @@ import {
   RegistrarAsistenciaIndividualSuccessResponse,
   TipoAsistencia,
 } from "@/interfaces/shared/AsistenciaRequests";
-import { HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS, MINUTO_MAXIMO_EXPIRACION_PARA_REGISTROS_EN_REDIS } from "@/constants/expirations";
+import {
+  HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS_DIA_SIGUIENTE,
+  MINUTO_MAXIMO_EXPIRACION_PARA_REGISTROS_EN_REDIS_DIA_SIGUIENTE,
+} from "@/constants/expirations";
 import {
   obtenerFechaActualPeru,
   obtenerFechaHoraActualPeru,
 } from "../../_helpers/obtenerFechaActualPeru";
 import { verifyAuthToken } from "@/lib/utils/backend/auth/functions/jwtComprobations";
+import addToDate from "@/lib/helpers/functions/date/addToDate";
 
 export const GrupoInstaciasDeRedisPorTipoAsistencia: Record<
   TipoAsistencia,
@@ -71,7 +75,7 @@ const validarPermisosRegistro = (
   esRegistroPropio: boolean = false,
   grado?: number,
   seccion?: string,
-  nivelEducativo?: string
+  nivelEducativo?: string,
 ): { esValido: boolean; mensaje?: string } => {
   switch (rol) {
     case RolesSistema.Directivo:
@@ -242,13 +246,16 @@ const calcularSegundosHastaExpiracion = async (): Promise<number> => {
   // ✅ Usar la nueva función que maneja todos los offsets
   const fechaActualPeru = await obtenerFechaHoraActualPeru();
 
-  // Crear fecha objetivo a las 20:00 del mismo día
-  const fechaExpiracion = new Date(fechaActualPeru);
+  // Crear fecha objetivo a las 01:00 del dia siguiente (hora de expiración máxima para registros)
+  const fechaExpiracion = addToDate(new Date(fechaActualPeru), {
+    dias: 1,
+  });
+
   fechaExpiracion.setHours(
-    HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS,
-    MINUTO_MAXIMO_EXPIRACION_PARA_REGISTROS_EN_REDIS,
+    HORA_MAXIMA_EXPIRACION_PARA_REGISTROS_EN_REDIS_DIA_SIGUIENTE,
+    MINUTO_MAXIMO_EXPIRACION_PARA_REGISTROS_EN_REDIS_DIA_SIGUIENTE,
     0,
-    0
+    0,
   );
 
   // Si la hora actual ya pasó las 20:00, establecer para las 20:00 del día siguiente
@@ -258,7 +265,7 @@ const calcularSegundosHastaExpiracion = async (): Promise<number> => {
 
   // Calcular diferencia en segundos
   const segundosHastaExpiracion = Math.floor(
-    (fechaExpiracion.getTime() - fechaActualPeru.getTime()) / 1000
+    (fechaExpiracion.getTime() - fechaActualPeru.getTime()) / 1000,
   );
   return Math.max(1, segundosHastaExpiracion); // Mínimo 1 segundo para evitar valores negativos o cero
 };
@@ -320,7 +327,7 @@ export async function POST(req: NextRequest) {
             message: "Se requiere FechaHoraEsperadaISO para registro propio",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -333,7 +340,7 @@ export async function POST(req: NextRequest) {
             message: `El rol ${rol} no puede registrar asistencia personal`,
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -345,7 +352,7 @@ export async function POST(req: NextRequest) {
       const fechaActualPeru = await obtenerFechaHoraActualPeru();
       timestampActual = fechaActualPeru.getTime();
       desfaseSegundos = Math.floor(
-        (timestampActual - new Date(FechaHoraEsperadaISO).getTime()) / 1000
+        (timestampActual - new Date(FechaHoraEsperadaISO).getTime()) / 1000,
       );
     } else if (esRegistroEstudiante) {
       // ✅ REGISTRO DE ESTUDIANTE: Requiere Id_Estudiante + desfaseSegundosAsistenciaEstudiante
@@ -360,7 +367,7 @@ export async function POST(req: NextRequest) {
             message: `ID de estudiante inválido: ${idValidation.errorMessage}`,
             errorType: idValidation.errorType,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -373,7 +380,7 @@ export async function POST(req: NextRequest) {
               "Se requieren nivel educativo, grado y sección para registrar estudiantes",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -385,7 +392,7 @@ export async function POST(req: NextRequest) {
             message: "El grado debe ser un número entre 1 y 6",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -397,7 +404,7 @@ export async function POST(req: NextRequest) {
             message: "La sección debe ser una letra mayúscula (A-Z)",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -424,7 +431,7 @@ export async function POST(req: NextRequest) {
               "Para registrar personal se requieren Actor y TipoAsistencia",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -436,7 +443,7 @@ export async function POST(req: NextRequest) {
             message: "Actor no válido",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -448,7 +455,7 @@ export async function POST(req: NextRequest) {
             message: "TipoAsistencia no válido",
             errorType: RequestErrorTypes.INVALID_PARAMETERS,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -462,7 +469,7 @@ export async function POST(req: NextRequest) {
               message: `ID de usuario inválido para ${Actor}: ${idValidation.errorMessage}`,
               errorType: idValidation.errorType,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -475,7 +482,7 @@ export async function POST(req: NextRequest) {
       const fechaActualPeru = await obtenerFechaHoraActualPeru();
       timestampActual = fechaActualPeru.getTime();
       desfaseSegundos = Math.floor(
-        (timestampActual - new Date(FechaHoraEsperadaISO).getTime()) / 1000
+        (timestampActual - new Date(FechaHoraEsperadaISO).getTime()) / 1000,
       );
     } else {
       return NextResponse.json(
@@ -485,7 +492,7 @@ export async function POST(req: NextRequest) {
             "Debe especificar o registro de estudiante (Id_Estudiante + desfase) o personal (Id_Usuario + FechaHoraEsperadaISO)",
           errorType: RequestErrorTypes.INVALID_PARAMETERS,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -497,7 +504,7 @@ export async function POST(req: NextRequest) {
           message: "Se requiere un ModoRegistro válido",
           errorType: RequestErrorTypes.INVALID_PARAMETERS,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -511,7 +518,7 @@ export async function POST(req: NextRequest) {
       esRegistroPropio,
       Grado,
       Seccion,
-      NivelDelEstudiante
+      NivelDelEstudiante,
     );
 
     if (!validacionPermisos.esValido) {
@@ -521,7 +528,7 @@ export async function POST(req: NextRequest) {
           message: validacionPermisos.mensaje,
           errorType: PermissionErrorTypes.INSUFFICIENT_PERMISSIONS,
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -539,7 +546,7 @@ export async function POST(req: NextRequest) {
 
     // Usar el TipoAsistencia determinado
     const redisClientInstance = redisClient(
-      GrupoInstaciasDeRedisPorTipoAsistencia[tipoAsistenciaFinal]
+      GrupoInstaciasDeRedisPorTipoAsistencia[tipoAsistenciaFinal],
     );
 
     // Verificar si ya existe un registro en Redis
@@ -566,11 +573,11 @@ export async function POST(req: NextRequest) {
         esRegistroPropio
           ? "PROPIO"
           : esRegistroEstudiante
-          ? "ESTUDIANTE"
-          : "PERSONAL"
+            ? "ESTUDIANTE"
+            : "PERSONAL"
       } - Actor: ${actorFinal} - ${
         esNuevoRegistro ? "NUEVO" : "EXISTENTE"
-      } - Desfase: ${desfaseSegundos}s`
+      } - Desfase: ${desfaseSegundos}s`,
     );
 
     return NextResponse.json(
@@ -588,7 +595,7 @@ export async function POST(req: NextRequest) {
           tipoAsistencia: tipoAsistenciaFinal,
         },
       } as RegistrarAsistenciaIndividualSuccessResponse,
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error al registrar asistencia:", error);
@@ -600,7 +607,7 @@ export async function POST(req: NextRequest) {
         errorType: SystemErrorTypes.UNKNOWN_ERROR,
         ErrorDetails: error instanceof Error ? error.message : String(error),
       } as ErrorResponseAPIBase,
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
