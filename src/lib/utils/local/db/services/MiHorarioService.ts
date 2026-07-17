@@ -47,7 +47,7 @@ export class MiHorarioService extends SiasisService {
     switch (datos.Actor) {
       case ActoresSistema.Directivo:
 
-        ajustesGeneralesSistemaIDB.updateValorByNombre(AjustesGeneralesSistema.)
+        // ajustesGeneralesSistemaIDB.updateValorByNombre(AjustesGeneralesSistema.)
 
 
         break;
@@ -67,33 +67,33 @@ export class MiHorarioService extends SiasisService {
     }
   }
 
-  async getMiHorario(): Promise<
-    ReturnType<GetMiHorarioSuccessResponse["data"]>
-  > {
-    if (await this.seNecesitaConsultar()) {
-      const datosObtenidosDeAPI = await this.obtenerDatosDeAPI();
-      this.guardarDatosEnIndexedDB(datosObtenidosDeAPI.data);
-      return datosObtenidosDeAPI.data;
-    }
+  // async getMiHorario(): Promise<
+  //   ReturnType<GetMiHorarioSuccessResponse["data"]>
+  // > {
+  //   if (await this.seNecesitaConsultar()) {
+  //     const datosObtenidosDeAPI = await this.obtenerDatosDeAPI();
+  //     this.guardarDatosEnIndexedDB(datosObtenidosDeAPI.data);
+  //     return datosObtenidosDeAPI.data;
+  //   }
 
-    const { IndexedDBConnection } = await import("../IndexedDBConnection");
+  //   const { IndexedDBConnection } = await import("../IndexedDBConnection");
 
-    switch (IndexedDBConnection.rol) {
-      case RolesSistema.Directivo:
-        break;
-      case RolesSistema.ProfesorPrimaria:
-        break;
-      case RolesSistema.Auxiliar:
-        break;
+  //   switch (IndexedDBConnection.rol) {
+  //     case RolesSistema.Directivo:
+  //       break;
+  //     case RolesSistema.ProfesorPrimaria:
+  //       break;
+  //     case RolesSistema.Auxiliar:
+  //       break;
 
-      case RolesSistema.ProfesorSecundaria:
-      case RolesSistema.Tutor:
-        break;
-      case RolesSistema.PersonalAdministrativo:
-        break;
+  //     case RolesSistema.ProfesorSecundaria:
+  //     case RolesSistema.Tutor:
+  //       break;
+  //     case RolesSistema.PersonalAdministrativo:
+  //       break;
 
-      default:
-        throw new Error("ROL INVALIDO | MiHorarioService.getMiHorario");
-    }
-  }
+  //     default:
+  //       throw new Error("ROL INVALIDO | MiHorarioService.getMiHorario");
+  //   }
+  // }
 }
