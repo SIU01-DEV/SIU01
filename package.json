@@ -15,7 +15,7 @@
   "dependencies": {
     "-": "^0.0.1",
     "@google/genai": "^2.8.0",
-    "@prisma/client": "^7.0.1",
+    "@prisma/client": "^7.2.0",
     "@radix-ui/react-toast": "^1.2.7",
     "@reduxjs/toolkit": "^2.5.1",
     "@tailwindcss/container-queries": "^0.1.1",
@@ -37,7 +37,7 @@
     "nextjs-toploader": "^3.7.15",
     "nprogress": "^0.2.0",
     "pdf-lib": "^1.17.1",
-    "prisma": "^6.19.3",
+    "prisma": "^7.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0",
