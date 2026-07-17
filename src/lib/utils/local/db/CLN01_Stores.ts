@@ -5,15 +5,15 @@ export const getAvailableCLN01StoresByRol = (rol: RolesSistema) => {
   console.table(
     Object.fromEntries(
       Object.entries(CLN01_Stores).filter(([nombre, store]) =>
-        store.rolesPermitidos.includes(rol)
-      )
-    )
+        store.rolesPermitidos.includes(rol),
+      ),
+    ),
   );
 
   return Object.fromEntries(
     Object.entries(CLN01_Stores).filter(([nombre, store]) =>
-      store.rolesPermitidos.includes(rol)
-    )
+      store.rolesPermitidos.includes(rol),
+    ),
   );
 };
 
@@ -1453,6 +1453,8 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
     ],
   },
 
+  // CACHES DE DATA
+
   [TablasLocal.Tabla_Usuarios_Genericos_Cache]: {
     objectStore: {
       keyPath: "clave_busqueda",
@@ -1473,6 +1475,21 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
         {
           name: "por_rol_criterio",
           keyPath: ["rol", "criterio"],
+          options: { unique: false },
+        },
+      ],
+    },
+    rolesPermitidos: [RolesSistema.Directivo],
+  },
+
+  [TablasLocal.Tabla_Busqueda_Profesores_Secundaria_Cache]: {
+    objectStore: {
+      keyPath: "clave_busqueda",
+      autoIncrement: false,
+      indexes: [
+        {
+          name: "por_ultima_actualizacion",
+          keyPath: "ultima_actualizacion",
           options: { unique: false },
         },
       ],
@@ -1512,10 +1529,7 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
         },
       ],
     },
-    rolesPermitidos: [
-      RolesSistema.ProfesorPrimaria,
-      RolesSistema.Auxiliar,
-    ],
+    rolesPermitidos: [RolesSistema.ProfesorPrimaria, RolesSistema.Auxiliar],
   },
 
   // ========================================

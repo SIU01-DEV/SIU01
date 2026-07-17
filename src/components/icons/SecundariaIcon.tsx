@@ -3,7 +3,11 @@ import React from "react";
 
 const SecundariaIcon = ({ className, title }: IconProps) => {
   return (
-    <div className="text-inherit" title={title}>
+    <div
+      style={{ viewTransitionName: "Secundaria-Icon" }}
+      className="text-inherit"
+      title={title}
+    >
       <svg
         className={`text-inherit ${className}`}
         viewBox="0 0 52 52"

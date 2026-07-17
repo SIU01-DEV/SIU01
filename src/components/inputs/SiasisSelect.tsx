@@ -8,6 +8,7 @@ interface SiasisSelectProps {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   className?: string;
   placeholder?: string;
+  disabled?: boolean;
   selectAttributes?: SelectHTMLAttributes<HTMLSelectElement>;
 }
 
@@ -18,12 +19,14 @@ const SiasisSelect: React.FC<SiasisSelectProps> = ({
   onChange,
   className = "",
   placeholder = "Seleccione una opción",
+  disabled = false,
   selectAttributes,
 }) => {
   return (
     <div className="relative inline-block w-max">
       <select
         {...selectAttributes}
+        disabled={disabled}
         className={`appearance-none w-full font-normal
          px-2 py-1 rounded-md 
         shadow-sm focus:ring-2 focus:ring-negro
@@ -39,7 +42,7 @@ const SiasisSelect: React.FC<SiasisSelectProps> = ({
       </select>
       <div
         className={`pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 ${
-          selectAttributes?.disabled ? "opacity-50" : ""
+          disabled ? "opacity-50" : ""
         }`}
       >
         <DespliegueIcon className="w-[0.9rem] text-white" title="" />
