@@ -1453,7 +1453,9 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
     ],
   },
 
-  // CACHES DE DATA
+  // ========================================
+  // CACHES DE DATA DE BUSQUEDA
+  // ========================================
 
   [TablasLocal.Tabla_Usuarios_Genericos_Cache]: {
     objectStore: {
@@ -1483,6 +1485,21 @@ export const CLN01_Stores: Record<TablasLocal, SiasisIndexedDbObjectStore> = {
   },
 
   [TablasLocal.Tabla_Busqueda_Profesores_Secundaria_Cache]: {
+    objectStore: {
+      keyPath: "clave_busqueda",
+      autoIncrement: false,
+      indexes: [
+        {
+          name: "por_ultima_actualizacion",
+          keyPath: "ultima_actualizacion",
+          options: { unique: false },
+        },
+      ],
+    },
+    rolesPermitidos: [RolesSistema.Directivo],
+  },
+
+  [TablasLocal.Tabla_Busqueda_Profesores_Primaria_Cache]: {
     objectStore: {
       keyPath: "clave_busqueda",
       autoIncrement: false,

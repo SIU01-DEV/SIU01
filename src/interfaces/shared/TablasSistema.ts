@@ -138,9 +138,9 @@ export enum TablasLocal {
   Tabla_Archivos_Asistencia_Hoy = "archivos_asistencia_hoy",
   
   // Tablas para Caches de Busqueda
-  
   Tabla_Usuarios_Genericos_Cache = "usuarios_genericos_cache",
   Tabla_Busqueda_Profesores_Secundaria_Cache = "busqueda_profesores_secundaria_cache",
+  Tabla_Busqueda_Profesores_Primaria_Cache = "busqueda_profesores_primaria_cache",
 
   // Persistencias para Colas
   Tabla_Cola_Asistencias_Escolares = "cola_asistencias_escolares",
