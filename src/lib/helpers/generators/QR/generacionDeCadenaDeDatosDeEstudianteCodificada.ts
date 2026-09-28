@@ -2,7 +2,7 @@ import { ENTORNO } from "@/constants/ENTORNO";
 import { NOMBRE_INSTITUCION } from "@/constants/NOMBRE_INSITITUCION";
 import { NOMBRE_ACTUAL_SISTEMA } from "@/constants/NOMBRE_SISTEMA";
 import { Entorno } from "@/interfaces/shared/Entornos";
-import { EstudianteConAulaYRelacion } from "@/interfaces/shared/Estudiantes";
+import { EstudianteConAula, EstudianteConAulaYRelacion } from "@/interfaces/shared/Estudiantes";
 import { NivelEducativo } from "@/interfaces/shared/NivelEducativo";
 import { TiposIdentificadores } from "@/interfaces/shared/TiposIdentificadores";
 import CryptoJS from "crypto-js";
@@ -223,7 +223,7 @@ function normalizarIdEstudiante(idEstudiante: string): string {
 
 // 🎯 Función principal para generar QR
 export function generarCadenaDeDatosDeEstudianteCodificada(
-  estudiante: EstudianteConAulaYRelacion
+  estudiante: EstudianteConAula
 ): string {
   if (!estudiante.aula) {
     throw new Error("El estudiante no tiene aula asignada");

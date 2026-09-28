@@ -111,8 +111,8 @@ export class AulasParaResponsablesIDB extends BaseAulasIDB<T_Aulas> {
       const idsAulasRequeridas = Array.from(
         new Set(
           estudiantes
-            .map((est) => est.Id_Aula)
-            .filter((id): id is string => id !== null && id !== undefined)
+            .map((est) => String(est.Id_Aula))
+            .filter((id) => id !== null && id !== undefined)
         )
       );
 
@@ -134,6 +134,7 @@ export class AulasParaResponsablesIDB extends BaseAulasIDB<T_Aulas> {
 
       for (const idAula of idsAulasRequeridas) {
         const aulaExistente = await this.getAulaPorId(idAula);
+        console.log(aulaExistente)
         if (aulaExistente) {
           aulasEnCache.push(aulaExistente);
         } else {

@@ -19,6 +19,7 @@ import comprobarSincronizacionDeTabla from "@/lib/helpers/validations/comprobarS
 import ultimaActualizacionTablasLocalesIDB from "./UltimaActualizacionTablasLocalesIDB";
 import { DatabaseModificationOperations } from "@/interfaces/shared/DatabaseModificationOperations";
 import { Endpoint_Get_Personal_Administrativo_API01 } from "@/lib/utils/backend/endpoints/api01/PersonalAdministrativo";
+import { EncryptorIDB } from "../encryptation/EncryptorIDB";
 
 // Tipo para la entidad (sin atributos de fechas)
 export type IPersonalAdministrativoLocal = PersonalAdministrativoSinContraseña;
@@ -148,6 +149,7 @@ export class PersonalAdministrativoIDB {
    * Obtiene todo el personal administrativo
    * @param includeInactive Si es true, incluye personal inactivo
    * @returns Promesa con el array de personal administrativo
+   * @Postcondition El resultado estará desencriptado
    */
   public async getAll(
     includeInactive: boolean = true
@@ -169,7 +171,11 @@ export class PersonalAdministrativoIDB {
           const request = store.getAll();
 
           request.onsuccess = () =>
-            resolve(request.result as IPersonalAdministrativoLocal[]);
+            resolve(
+              EncryptorIDB.decryptThis(
+                request.result
+              ) as IPersonalAdministrativoLocal[]
+            );
           request.onerror = () => reject(request.error);
         }
       );
@@ -203,6 +209,7 @@ export class PersonalAdministrativoIDB {
   /**
    * Obtiene todos los DNIs del personal administrativo almacenados localmente
    * @returns Promise con array de DNIs
+   * @Postcondition El resultado no estará encriptado
    */
   private async getAllDNIs(): Promise<string[]> {
     try {
@@ -221,7 +228,7 @@ export class PersonalAdministrativoIDB {
             cursor.continue();
           } else {
             // No hay más registros, resolvemos con el array de DNIs
-            resolve(dnis);
+            resolve(EncryptorIDB.decryptThis(dnis));
           }
         };
 
@@ -240,6 +247,7 @@ export class PersonalAdministrativoIDB {
 
   /**
    * Elimina un miembro del personal administrativo por su DNI
+   * @Precondition Los parametros no estaran encriptados
    * @param dni DNI del personal administrativo a eliminar
    * @returns Promise<void>
    */
@@ -251,7 +259,7 @@ export class PersonalAdministrativoIDB {
       );
 
       return new Promise<void>((resolve, reject) => {
-        const request = store.delete(dni);
+        const request = store.delete(EncryptorIDB.encryptThis(dni));
 
         request.onsuccess = () => {
           resolve();
@@ -273,6 +281,7 @@ export class PersonalAdministrativoIDB {
   /**
    * Actualiza o crea personal administrativo en lote desde el servidor
    * También elimina registros que ya no existen en el servidor
+   * @Precondition Los parametros no estaran encriptados
    * @param personalAdministrativoServidor Personal administrativo proveniente del servidor
    * @returns Conteo de operaciones: creados, actualizados, eliminados, errores
    */
@@ -340,7 +349,9 @@ export class PersonalAdministrativoIDB {
 
             // Ejecutar la operación put
             await new Promise<void>((resolve, reject) => {
-              const request = store.put(personalServidor);
+              const request = store.put(
+                EncryptorIDB.encryptThis(personalServidor)
+              );
 
               request.onsuccess = () => {
                 if (existePersonal) {
@@ -383,8 +394,10 @@ export class PersonalAdministrativoIDB {
 
   /**
    * Obtiene un miembro del personal administrativo por su DNI
+   * @Precondition El parametro no estara encriptado
    * @param dni DNI del personal administrativo
    * @returns Personal administrativo encontrado o null
+   * @Postcondition El resultado estará desencriptado
    */
   public async getById(
     dni: string
@@ -394,10 +407,10 @@ export class PersonalAdministrativoIDB {
 
       return new Promise<IPersonalAdministrativoLocal | null>(
         (resolve, reject) => {
-          const request = store.get(dni);
+          const request = store.get(EncryptorIDB.encryptThis(dni));
 
           request.onsuccess = () => {
-            resolve(request.result || null);
+            resolve(EncryptorIDB.decryptThis(request.result) || null);
           };
 
           request.onerror = () => {
@@ -420,6 +433,7 @@ export class PersonalAdministrativoIDB {
 
   /**
    * Obtiene personal administrativo por cargo
+   * @Detail La propiedad "cargo" nunca estara encriptada
    * @param cargo Cargo del personal administrativo
    * @returns Array con el personal administrativo que coincide con el cargo
    */

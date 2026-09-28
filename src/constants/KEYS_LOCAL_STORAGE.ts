@@ -1,0 +1,10 @@
+
+
+// KEYS LOCAL STORAGE FOR TOOLTIPS
+export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_KEY =
+  "toltip-tomar-asistencia-personal-SHOWED";
+export const SE_MOSTRO_TOLTIP_TOMAR_ASISTENCIA_PERSONAL_VALOR_INICIAL = "false";
+
+
+// KEYS LOCAL STORAGE FOR KEYS
+export const SEED_KEY_ENCRIPTATION_KEY = "seed-key-encriptation";

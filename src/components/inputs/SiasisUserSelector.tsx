@@ -10,7 +10,6 @@ import {
   SetStateAction,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import Loader from "../shared/loaders/Loader";
@@ -19,6 +18,7 @@ import FotoPerfilClientSide from "../utils/photos/FotoPerfilClientSide";
 import { UsuariosGenericosIDB } from "@/lib/utils/local/db/models/UsuariosGenericosIDB";
 import { extraerTipoDeIdentificador } from "@/lib/helpers/extractors/extraerTipoDeIdentificador";
 import { TiposIdentificadoresTextos } from "@/interfaces/shared/TiposIdentificadores";
+import useDebouncedValue from "@/hooks/useDebounceValue";
 
 interface SiasisUserSelectorProps {
   rolUsuariosABuscar?: RolesSistema;
@@ -36,8 +36,13 @@ const UsuarioGenericoEncontrado = ({
   usuarioGenerico: GenericUser;
   handleUsuarioSeleccionado: (usuarioSeleccionado: GenericUser) => void;
 }) => {
-
-  const TipoIdentificacion = TiposIdentificadoresTextos[extraerTipoDeIdentificador(usuarioGenerico.Identificador_Nacional_Directivo??usuarioGenerico.ID_Usuario)];
+  const TipoIdentificacion =
+    TiposIdentificadoresTextos[
+      extraerTipoDeIdentificador(
+        usuarioGenerico.Identificador_Nacional_Directivo ??
+          usuarioGenerico.ID_Usuario,
+      )
+    ];
 
   return (
     <li
@@ -61,12 +66,12 @@ const UsuarioGenericoEncontrado = ({
             </span>
             <span className="text-xs text-gray-500 group-hover:text-blue-500">
               {TipoIdentificacion}:{" "}
-              {usuarioGenerico.Identificador_Nacional_Directivo ?? usuarioGenerico.ID_Usuario}
+              {usuarioGenerico.Identificador_Nacional_Directivo ??
+                usuarioGenerico.ID_Usuario}
             </span>
           </div>
         </div>
 
-        {/* Icono de selección */}
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
             <svg
@@ -90,8 +95,8 @@ const UsuarioGenericoEncontrado = ({
 };
 
 const LIMITE_USUARIOS_GENERICOS_A_TRAER = 5;
-// Controla si se muestra feedback visual al usuario mientras escribe (iconos, mensajes, etc.)
 const FEEDBACK_ESCRITURA = true;
+const DEBOUNCE_DELAY = 500;
 
 const SiasisUserSelector = ({
   rolUsuariosABuscar,
@@ -115,13 +120,8 @@ const SiasisUserSelector = ({
   >([]);
   const [estaDesplegado, setEstaDesplegado] = useState(false);
   const [criterioDeBusqueda, setCriterioDeBusqueda] = useState<string>("");
-  const [isTyping, setIsTyping] = useState(false);
 
   const { delegarEvento } = useDelegacionEventos();
-
-  // Ref para el timeout del debounce
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const DEBOUNCE_DELAY = 500; // 500ms de delay
 
   // Instancia del modelo (se crea una sola vez)
   const [usuariosGenericosIDB] = useState(
@@ -130,61 +130,32 @@ const SiasisUserSelector = ({
         siasisAPI,
         setIsSomethingLoading,
         setError,
-        setSuccessMessage
-      )
+        setSuccessMessage,
+      ),
   );
+
+  // --- Debounce estandarizado ---
+  // Si el criterio está vacío, no tiene sentido esperar el delay: se debe
+  // disparar la búsqueda inicial (primeros 5 usuarios) de inmediato.
+  const criterioParaDebounce = criterioDeBusqueda.trim();
+  const criterioDebounced = useDebouncedValue(
+    criterioParaDebounce,
+    criterioParaDebounce === "" ? 0 : DEBOUNCE_DELAY,
+  );
+
+  // "Escribiendo..." = el usuario ya tipeó algo pero el debounce aún no libera ese valor
+  const isTyping =
+    FEEDBACK_ESCRITURA &&
+    criterioParaDebounce !== "" &&
+    criterioParaDebounce !== criterioDebounced;
 
   // Función segura para establecer usuarios obtenidos
   const setUsuariosSeguro = useCallback(
     (usuarios: GenericUser[] | undefined | null) => {
       setUsuariosGenericosObtenidos(Array.isArray(usuarios) ? usuarios : []);
     },
-    []
+    [],
   );
-
-  // Función de búsqueda usando IndexedDB (equivalente al fetchUsuariosGenericos original)
-  const buscarUsuariosGenericos = useCallback(async () => {
-    try {
-      if (
-        criterioDeBusqueda.trim().length > 0 &&
-        criterioDeBusqueda.trim().length < 2
-      ) {
-        setError({
-          success: false,
-          message: "El criterio de búsqueda debe tener al menos 2 caracteres",
-        });
-        setUsuariosSeguro([]);
-        return;
-      }
-
-      const { resultados } = await usuariosGenericosIDB.buscarUsuarios(
-        rolUsuariosABuscar!,
-        criterioDeBusqueda.trim() || "",
-        LIMITE_USUARIOS_GENERICOS_A_TRAER
-      );
-
-      setUsuariosSeguro(resultados);
-    } catch (e) {
-      setUsuariosSeguro([]);
-      if (e instanceof Error) {
-        setError({
-          success: false,
-          message: e.message,
-        });
-      } else {
-        setError({
-          success: false,
-          message: "Error inesperado al buscar usuarios",
-        });
-      }
-    }
-  }, [
-    criterioDeBusqueda,
-    rolUsuariosABuscar,
-    usuariosGenericosIDB,
-    setError,
-    setUsuariosSeguro,
-  ]);
 
   useEffect(() => {
     if (!delegarEvento) return;
@@ -195,73 +166,60 @@ const SiasisUserSelector = ({
       () => {
         setEstaDesplegado(false);
       },
-      true
+      true,
     );
   }, [delegarEvento, ID_SELECTOR_USUARIO_GENERICO_HTML]);
 
-  // Determinar si el componente está deshabilitado
   const estaDeshabilitado = disabled || !rolUsuariosABuscar;
 
-  // DEBOUNCE LOGIC + BÚSQUEDA INICIAL: Buscar después de que el usuario deje de escribir
-  // También busca los primeros 5 usuarios automáticamente al abrir el dropdown
+  // Búsqueda real: se dispara con el valor YA debounced, o de inmediato si está vacío
   useEffect(() => {
-    // Limpiar timeout anterior
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    // Si no está desplegado o está deshabilitado, limpiar y salir
     if (!estaDesplegado || estaDeshabilitado) {
       cancelAllRequests();
       setUsuariosSeguro([]);
-      setIsTyping(false);
       return;
     }
 
-    // Si el criterio está vacío, ejecutar búsqueda inicial inmediatamente
-    // (muestra los primeros 5 usuarios sin filtros)
-    if (criterioDeBusqueda.trim() === "") {
-      setIsTyping(false);
-      setError(null);
-      buscarUsuariosGenericos();
+    if (criterioDebounced.length > 0 && criterioDebounced.length < 2) {
+      setError({
+        success: false,
+        message: "El criterio de búsqueda debe tener al menos 2 caracteres",
+      });
+      setUsuariosSeguro([]);
       return;
     }
 
-    // Si hay criterio de búsqueda, aplicar debounce
-    if (FEEDBACK_ESCRITURA) {
-      setIsTyping(true);
-    }
     setError(null);
 
-    // Configurar timeout para buscar después del delay
-    debounceTimeoutRef.current = setTimeout(() => {
-      if (FEEDBACK_ESCRITURA) {
-        setIsTyping(false);
-      }
-      buscarUsuariosGenericos();
-    }, DEBOUNCE_DELAY);
+    const buscar = async () => {
+      try {
+        const { resultados } = await usuariosGenericosIDB.buscarUsuarios(
+          rolUsuariosABuscar!,
+          criterioDebounced,
+          LIMITE_USUARIOS_GENERICOS_A_TRAER,
+        );
 
-    // Cleanup function
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+        setUsuariosSeguro(resultados);
+      } catch (e) {
+        setUsuariosSeguro([]);
+        if (e instanceof Error) {
+          setError({ success: false, message: e.message });
+        } else {
+          setError({
+            success: false,
+            message: "Error inesperado al buscar usuarios",
+          });
+        }
       }
     };
+
+    buscar();
   }, [
     rolUsuariosABuscar,
-    criterioDeBusqueda,
+    criterioDebounced,
     estaDesplegado,
     estaDeshabilitado,
   ]);
-
-  // Cleanup al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleUsuarioSeleccionado = useCallback(
     (usuarioSeleccionado: GenericUser) => {
@@ -269,7 +227,7 @@ const SiasisUserSelector = ({
       setEstaDesplegado(false);
       setCriterioDeBusqueda("");
     },
-    [setUsuarioSeleccionado]
+    [setUsuarioSeleccionado],
   );
 
   const DENOMINACION_USUARIOS = rolUsuariosABuscar
@@ -283,7 +241,6 @@ const SiasisUserSelector = ({
       </label>
 
       <div className="relative w-full">
-        {/* Selector principal */}
         <div
           className={`w-full px-3 py-2.5 border-2 rounded-lg cursor-pointer transition-all duration-200
                       bg-white min-h-[3rem] flex items-center justify-between shadow-sm
@@ -291,8 +248,8 @@ const SiasisUserSelector = ({
                         estaDeshabilitado
                           ? "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
                           : estaDesplegado
-                          ? "border-blue-500 ring-2 ring-blue-100 shadow-md"
-                          : "border-gray-200 hover:border-blue-300 hover:shadow-md"
+                            ? "border-blue-500 ring-2 ring-blue-100 shadow-md"
+                            : "border-gray-200 hover:border-blue-300 hover:shadow-md"
                       }`}
           id={ID_SELECTOR_USUARIO_GENERICO_HTML}
           onClick={() => {
@@ -303,7 +260,6 @@ const SiasisUserSelector = ({
         >
           <div className="flex-1 min-w-0">
             {!rolUsuariosABuscar ? (
-              // Estado: No hay rol seleccionado
               <div className="flex items-center space-x-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                 <div className="min-w-0">
@@ -316,7 +272,6 @@ const SiasisUserSelector = ({
                 </div>
               </div>
             ) : usuarioSeleccionado ? (
-              // Estado: Usuario seleccionado
               <div className="flex items-center space-x-2.5">
                 <FotoPerfilClientSide
                   Google_Drive_Foto_ID={
@@ -330,14 +285,20 @@ const SiasisUserSelector = ({
                     {usuarioSeleccionado.Apellidos}
                   </span>
                   <span className="text-xs text-gray-500 block truncate">
-                    {TiposIdentificadoresTextos[extraerTipoDeIdentificador(usuarioSeleccionado.ID_Usuario) ]}:{" "}
+                    {
+                      TiposIdentificadoresTextos[
+                        extraerTipoDeIdentificador(
+                          usuarioSeleccionado.ID_Usuario,
+                        )
+                      ]
+                    }
+                    :{" "}
                     {usuarioSeleccionado.Identificador_Nacional_Directivo ??
                       usuarioSeleccionado.ID_Usuario}
                   </span>
                 </div>
               </div>
             ) : (
-              // Estado: Rol seleccionado pero sin usuario
               <div className="flex items-center space-x-2.5">
                 <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <div className="min-w-0">
@@ -352,7 +313,6 @@ const SiasisUserSelector = ({
             )}
           </div>
 
-          {/* Icono de flecha */}
           <div className="flex-shrink-0 ml-2">
             <ChevronDown
               className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
@@ -362,20 +322,18 @@ const SiasisUserSelector = ({
           </div>
         </div>
 
-        {/* Dropdown */}
         {estaDesplegado && rolUsuariosABuscar && (
           <div
             id={`${ID_SELECTOR_USUARIO_GENERICO_HTML}-dropdown`}
             className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl 
                        max-h-80 overflow-hidden"
           >
-            {/* Buscador mejorado */}
             <div
               id={`${ID_SELECTOR_USUARIO_GENERICO_HTML}-buscador`}
               className="p-3 border-b border-gray-100 bg-gray-200  rounded-t-lg"
             >
               <div className="relative">
-                {FEEDBACK_ESCRITURA && isTyping ? (
+                {isTyping ? (
                   <Clock className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500" />
                 ) : isSomethingLoading ? (
                   <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2">
@@ -397,7 +355,7 @@ const SiasisUserSelector = ({
                 />
               </div>
 
-              {FEEDBACK_ESCRITURA && isTyping && (
+              {isTyping && (
                 <div className="mt-1 text-xs text-blue-600 flex items-center">
                   <Clock className="w-3 h-3 mr-1" />
                   Escribiendo...
@@ -405,13 +363,11 @@ const SiasisUserSelector = ({
               )}
             </div>
 
-            {/* Resultados */}
             <div
               id={`${ID_SELECTOR_USUARIO_GENERICO_HTML}-users-founded-list`}
               className="overflow-y-auto max-h-64"
             >
-              {FEEDBACK_ESCRITURA && isTyping ? (
-                // Estado: Usuario escribiendo (solo si FEEDBACK_ESCRITURA está activo)
+              {isTyping ? (
                 <div className="flex items-center justify-center py-6">
                   <Clock className="w-5 h-5 mr-2 text-blue-500" />
                   <span className="text-blue-600 text-sm">
@@ -431,7 +387,7 @@ const SiasisUserSelector = ({
                             key={usuarioGenerico.ID_Usuario}
                             usuarioGenerico={usuarioGenerico}
                           />
-                        )
+                        ),
                       )}
                     </ul>
                   ) : (
@@ -446,7 +402,6 @@ const SiasisUserSelector = ({
                     </div>
                   )}
 
-                  {/* Mensaje informativo */}
                   {!error && (usuariosGenericosObtenidos?.length ?? 0) > 0 && (
                     <div className="px-3 py-2 text-center bg-blue-50 border-t border-blue-100">
                       <p className="text-blue-600 text-xs">
@@ -457,7 +412,6 @@ const SiasisUserSelector = ({
                     </div>
                   )}
 
-                  {/* Error */}
                   {error && (
                     <div className="px-3 py-3 text-center bg-red-50 border-t border-red-100">
                       <AlertCircle className="w-4 h-4 text-red-500 mx-auto mb-1" />
@@ -468,7 +422,6 @@ const SiasisUserSelector = ({
                   )}
                 </>
               ) : (
-                // Estado: API cargando
                 <div className="flex items-center justify-center py-6">
                   <Loader className="w-5 h-5 mr-2" />
                   <span className="text-gray-500 text-sm">

@@ -31,14 +31,6 @@ export interface IProfesorBaseLocal {
   ultima_fecha_actualizacion: number;
 }
 
-// Filtros para consultas
-export interface IProfesorFilter {
-  idProfesor?: string;
-  nivel?: NivelEducativo;
-  nombres?: string;
-  apellidos?: string;
-}
-
 // Resultado de operaciones
 export interface ProfesorOperationResult {
   success: boolean;
@@ -60,8 +52,13 @@ const MAPEO_TABLA_REMOTA_PROFESORES: Record<NivelEducativo, TablasRemoto> = {
 };
 
 /**
- * Clase base para el manejo de profesores en IndexedDB
- * Maneja tanto profesores de primaria como de secundaria
+ * Clase base para el manejo de profesores en IndexedDB.
+ * Mantiene solo los métodos genéricos y de bajo nivel que son
+ * reutilizados por las clases hijas especializadas por rol
+ * (ProfesoresParaResponsablesIDB, ProfesoresParaDirectivosIDB, etc.).
+ *
+ * La lógica de negocio específica de cada rol (búsquedas, caché de
+ * resultados, endpoints particulares) vive en las clases hijas.
  */
 export class ProfesoresBaseIDB {
   protected dateHelper: AsistenciaDateHelper;
@@ -110,15 +107,6 @@ export class ProfesoresBaseIDB {
   ): string {
     // La clave es simplemente el ID del profesor, pero se almacena en la tabla correspondiente al nivel
     return idProfesor;
-  }
-
-  /**
-   * Obtiene el campo ID correspondiente según el nivel
-   */
-  protected obtenerCampoId(nivel: NivelEducativo): string {
-    return nivel === NivelEducativo.PRIMARIA
-      ? "Id_Profesor_Primaria"
-      : "Id_Profesor_Secundaria";
   }
 
   // =====================================================================================
@@ -230,7 +218,7 @@ export class ProfesoresBaseIDB {
   }
 
   /**
-   * Guarda o actualiza un profesor - VERSIÓN CORREGIDA
+   * Guarda o actualiza un profesor
    */
   public async guardarProfesor(
     profesor: Omit<IProfesorBaseLocal, "ultima_fecha_actualizacion">,
@@ -256,7 +244,7 @@ export class ProfesoresBaseIDB {
           resolve({
             success: true,
             message: "Profesor guardado exitosamente",
-            data: profesorCompleto, // DEVOLVER EL OBJETO COMPLETO, NO SOLO EL ID
+            data: profesorCompleto,
           });
         };
 
@@ -273,212 +261,6 @@ export class ProfesoresBaseIDB {
         }`,
       };
     }
-  }
-
-  /**
-   * Elimina un profesor
-   */
-  public async eliminarProfesor(
-    idProfesor: string,
-    nivel: NivelEducativo
-  ): Promise<ProfesorOperationResult> {
-    try {
-      const nombreTabla = this.obtenerNombreTabla(nivel);
-      const store = await IndexedDBConnection.getStore(
-        nombreTabla,
-        "readwrite"
-      );
-      const clave = this.generarClaveProfesor(idProfesor, nivel);
-
-      return new Promise<ProfesorOperationResult>((resolve, reject) => {
-        const request = store.delete(clave);
-
-        request.onsuccess = () => {
-          resolve({
-            success: true,
-            message: "Profesor eliminado exitosamente",
-          });
-        };
-
-        request.onerror = () => {
-          reject(request.error);
-        };
-      });
-    } catch (error) {
-      this.handleIndexedDBError(error, `eliminar profesor ${idProfesor}`);
-      return {
-        success: false,
-        message: `Error al eliminar profesor: ${
-          error instanceof Error ? error.message : "Error desconocido"
-        }`,
-      };
-    }
-  }
-
-  /**
-   * Busca profesores con filtros
-   */
-  public async buscarProfesoresConFiltros(
-    filtros: IProfesorFilter
-  ): Promise<IProfesorBaseLocal[]> {
-    try {
-      const resultados: IProfesorBaseLocal[] = [];
-
-      // Determinar qué niveles consultar
-      const nivelesAConsultar = filtros.nivel
-        ? [filtros.nivel]
-        : [NivelEducativo.PRIMARIA, NivelEducativo.SECUNDARIA];
-
-      // Ejecutar búsquedas en paralelo
-      const promesasBusqueda = nivelesAConsultar.map(async (nivel) => {
-        return this.buscarEnNivelEspecifico(nivel, filtros);
-      });
-
-      const resultadosPorNivel = await Promise.all(promesasBusqueda);
-
-      // Combinar resultados
-      resultadosPorNivel.forEach((profesores) => {
-        resultados.push(...profesores);
-      });
-
-      return resultados;
-    } catch (error) {
-      this.handleIndexedDBError(error, "buscar profesores con filtros");
-      return [];
-    }
-  }
-
-  /**
-   * Busca profesores en un nivel específico aplicando filtros
-   */
-  private async buscarEnNivelEspecifico(
-    nivel: NivelEducativo,
-    filtros: IProfesorFilter
-  ): Promise<IProfesorBaseLocal[]> {
-    const nombreTabla = this.obtenerNombreTabla(nivel);
-    const store = await IndexedDBConnection.getStore(nombreTabla);
-
-    return new Promise<IProfesorBaseLocal[]>((resolve, reject) => {
-      const profesores: IProfesorBaseLocal[] = [];
-      let request: IDBRequest;
-
-      // Si hay ID específico, usar get directo
-      if (filtros.idProfesor) {
-        const clave = this.generarClaveProfesor(filtros.idProfesor, nivel);
-        request = store.openCursor(IDBKeyRange.only(clave));
-      } else {
-        // Scan completo para otros filtros
-        request = store.openCursor();
-      }
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest)
-          .result as IDBCursorWithValue;
-
-        if (cursor) {
-          const profesor = cursor.value as IProfesorBaseLocal;
-
-          // Aplicar filtros adicionales
-          if (this.aplicarFiltrosProfesor(profesor, filtros)) {
-            profesores.push(profesor);
-          }
-
-          cursor.continue();
-        } else {
-          resolve(profesores);
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
-  }
-
-  /**
-   * Aplica filtros adicionales a un profesor
-   */
-  private aplicarFiltrosProfesor(
-    profesor: IProfesorBaseLocal,
-    filtros: IProfesorFilter
-  ): boolean {
-    // Filtro por nombres (búsqueda parcial, case insensitive)
-    if (filtros.nombres) {
-      const nombresBusqueda = filtros.nombres.toLowerCase();
-      const nombresProfesor = profesor.Nombres.toLowerCase();
-      if (!nombresProfesor.includes(nombresBusqueda)) {
-        return false;
-      }
-    }
-
-    // Filtro por apellidos (búsqueda parcial, case insensitive)
-    if (filtros.apellidos) {
-      const apellidosBusqueda = filtros.apellidos.toLowerCase();
-      const apellidosProfesor = profesor.Apellidos.toLowerCase();
-      if (!apellidosProfesor.includes(apellidosBusqueda)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * Actualiza múltiples profesores desde datos del servidor
-   */
-  protected async actualizarProfesoresDesdeServidor(
-    nivel: NivelEducativo,
-    profesoresServidor: Omit<IProfesorBaseLocal, "ultima_fecha_actualizacion">[]
-  ): Promise<{ actualizados: number; creados: number; errores: number }> {
-    const resultado = { actualizados: 0, creados: 0, errores: 0 };
-
-    try {
-      const BATCH_SIZE = 50;
-
-      for (let i = 0; i < profesoresServidor.length; i += BATCH_SIZE) {
-        const lote = profesoresServidor.slice(i, i + BATCH_SIZE);
-
-        for (const profesorServidor of lote) {
-          try {
-            const idProfesor =
-              nivel === NivelEducativo.PRIMARIA
-                ? profesorServidor.Id_Profesor_Primaria!
-                : profesorServidor.Id_Profesor_Secundaria!;
-
-            const profesorExistente = await this.obtenerProfesorPorId(
-              idProfesor,
-              nivel
-            );
-
-            const resultadoOperacion = await this.guardarProfesor(
-              profesorServidor,
-              nivel
-            );
-
-            if (resultadoOperacion.success) {
-              if (profesorExistente) {
-                resultado.actualizados++;
-              } else {
-                resultado.creados++;
-              }
-            } else {
-              resultado.errores++;
-            }
-          } catch (error) {
-            console.error(`Error procesando profesor:`, error);
-            resultado.errores++;
-          }
-        }
-
-        // Pausa entre lotes
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-    } catch (error) {
-      console.error("Error en actualización masiva:", error);
-      resultado.errores++;
-    }
-
-    return resultado;
   }
 
   // =====================================================================================
@@ -529,57 +311,5 @@ export class ProfesoresBaseIDB {
         timestamp: Date.now(),
       },
     });
-  }
-
-  /**
-   * Obtiene estadísticas básicas por nivel
-   */
-  public async obtenerEstadisticasNivel(nivel: NivelEducativo): Promise<{
-    totalProfesores: number;
-    ultimaActualizacion: number | null;
-  }> {
-    try {
-      const nombreTabla = this.obtenerNombreTabla(nivel);
-      const store = await IndexedDBConnection.getStore(nombreTabla);
-
-      return new Promise((resolve, reject) => {
-        const stats = {
-          totalProfesores: 0,
-          ultimaActualizacion: null as number | null,
-        };
-
-        let ultimaFecha = 0;
-        const request = store.openCursor();
-
-        request.onsuccess = (event) => {
-          const cursor = (event.target as IDBRequest)
-            .result as IDBCursorWithValue;
-
-          if (cursor) {
-            const profesor = cursor.value as IProfesorBaseLocal;
-            stats.totalProfesores++;
-
-            if (profesor.ultima_fecha_actualizacion > ultimaFecha) {
-              ultimaFecha = profesor.ultima_fecha_actualizacion;
-            }
-
-            cursor.continue();
-          } else {
-            stats.ultimaActualizacion = ultimaFecha > 0 ? ultimaFecha : null;
-            resolve(stats);
-          }
-        };
-
-        request.onerror = () => {
-          reject(request.error);
-        };
-      });
-    } catch (error) {
-      this.handleIndexedDBError(error, `obtener estadísticas de ${nivel}`);
-      return {
-        totalProfesores: 0,
-        ultimaActualizacion: null,
-      };
-    }
   }
 }

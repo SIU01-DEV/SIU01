@@ -1,6 +1,8 @@
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
-import { CLN01_Stores } from "./CLN01_Stores";
+import { getAvailableCLN01StoresByRol } from "./CLN01_Stores";
 import { SIASIS_CLN01_VERSION } from "@/constants/SIASIS_CLN01_VERSION";
+import { SEED_KEY_ENCRIPTATION_KEY } from "@/constants/KEYS_LOCAL_STORAGE";
+import { generateKeyFromUsername } from "@/lib/helpers/generators/keys/generateKeyFromUsername";
 
 const nombre_rol_local_storage = "rol";
 const nombre_postfix_local_storage = "PostfixIDBFromUserData";
@@ -12,6 +14,7 @@ export class IndexedDBConnection {
   // Propiedad estática que se inicializa de forma inteligente
   private static _rol: RolesSistema | null = null;
   private static _PostfixIDB: string | null = null;
+  private static _seedKeyEncriptation: string | null = null;
 
   // Usamos la variable de entorno para la versión
   private dbVersionString: string = SIASIS_CLN01_VERSION;
@@ -62,7 +65,15 @@ export class IndexedDBConnection {
    * Setter para el PostfixIDBFromUserData
    */
   public static set PostfixIDBFromUserData(username: string) {
-    IndexedDBConnection._PostfixIDB = `U${username.substring(1, 3)}`;
+    // Generando llave determinista a partir del nombre de usuario
+    const _seedKeyEncriptation = generateKeyFromUsername(username);
+    IndexedDBConnection._seedKeyEncriptation = _seedKeyEncriptation;
+    localStorage.setItem(
+      SEED_KEY_ENCRIPTATION_KEY,
+      generateKeyFromUsername(username)
+    );
+
+    IndexedDBConnection._PostfixIDB = `S${username.substring(1, 4)}`;
     // Guardar en localStorage si estamos en el cliente
     if (typeof window !== "undefined" && window.localStorage) {
       localStorage.setItem(
@@ -70,6 +81,17 @@ export class IndexedDBConnection {
         IndexedDBConnection._PostfixIDB
       );
     }
+  }
+
+  /**
+   * Getter para la seedKeyEncriptation
+   */
+  public static get seedKeyEncriptation(): string | null {
+    // Verificar si estamos en el cliente
+    if (!IndexedDBConnection._seedKeyEncriptation) {
+      return localStorage.getItem(SEED_KEY_ENCRIPTATION_KEY);
+    }
+    return IndexedDBConnection._seedKeyEncriptation;
   }
 
   /**
@@ -106,7 +128,7 @@ export class IndexedDBConnection {
    * Obtiene el nombre de la base de datos basado en el rol actual
    */
   private get dbName(): string {
-    return `SIASIS-CLN01-${IndexedDBConnection.rol}-${IndexedDBConnection.PostfixIDBFromUserData}`;
+    return `SIASIS-CLN01-${(IndexedDBConnection.rol)}-${IndexedDBConnection.PostfixIDBFromUserData}`;
   }
 
   /**
@@ -173,7 +195,11 @@ export class IndexedDBConnection {
         // Si hay stores existentes que ya no necesitamos, los eliminamos
         for (let i = 0; i < db.objectStoreNames.length; i++) {
           const storeName = db.objectStoreNames[i];
-          if (!Object.keys(CLN01_Stores).includes(storeName)) {
+          if (
+            !Object.keys(
+              getAvailableCLN01StoresByRol(IndexedDBConnection._rol!)
+            ).includes(storeName)
+          ) {
             db.deleteObjectStore(storeName);
           }
         }
@@ -208,16 +234,27 @@ export class IndexedDBConnection {
    * Configura la estructura de la base de datos
    */
   private configureDatabase(db: IDBDatabase): void {
+    if (!IndexedDBConnection._rol) {
+      throw new Error(
+        "El rol no está definido al configurar la base de datos con el esquema adecuado."
+      );
+    }
+
+    const CLN01_StoresForThisRol = getAvailableCLN01StoresByRol(
+      IndexedDBConnection._rol!
+    );
+
+    console.log(CLN01_StoresForThisRol);
+
     // Crear los object stores y sus índices
-    for (const [storeName, config] of Object.entries(CLN01_Stores)) {
+    for (const [storeName, config] of Object.entries(CLN01_StoresForThisRol)) {
       if (!db.objectStoreNames.contains(storeName)) {
         const store = db.createObjectStore(storeName, {
-          keyPath: config.keyPath,
-          autoIncrement: config.autoIncrement,
+          keyPath: config.objectStore.keyPath,
+          autoIncrement: config.objectStore.autoIncrement,
         });
-
         // Crear los índices
-        for (const index of config.indexes) {
+        for (const index of config.objectStore.indexes) {
           store.createIndex(index.name, index.keyPath, index.options);
         }
       }

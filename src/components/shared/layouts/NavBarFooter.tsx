@@ -23,9 +23,9 @@ const getUniformContainerStyles = (itemsCount: number) => {
   };
 
   const landscapeGapClasses = {
-    1: "landscape-small:gap-[1.2rem] landscape-tablet-sm:gap-[1.2rem]", // 16px * 0.75 = 12px
-    2: "landscape-small:gap-[0.9rem] landscape-tablet-sm:gap-[0.9rem]", // 12px * 0.75 = 9px
-    3: "landscape-small:gap-[0.6rem] landscape-tablet-sm:gap-[0.6rem]", // 8px * 0.75 = 6px
+    1: "landscape-small:gap-[1.2rem] landscape-tablet-sm:gap-[1.2rem]",
+    2: "landscape-small:gap-[0.9rem] landscape-tablet-sm:gap-[0.9rem]",
+    3: "landscape-small:gap-[0.6rem] landscape-tablet-sm:gap-[0.6rem]",
   };
 
   return `
@@ -45,9 +45,8 @@ const getUniformContainerStyles = (itemsCount: number) => {
     short-height:py-4
     landscape-small:short-height:py-[0.75rem]
     landscape-tablet-sm:short-height:py-[0.75rem]
-    overflow-x-auto
+    overflow-x-hidden
     justify-center
-    min-w-fit
     scrollbar-hide
     sm:justify-center
   `;
@@ -61,7 +60,7 @@ const getUniformItemStyles = () => `
   landscape-small:hover:scale-[0.97]
   landscape-tablet-sm:hover:scale-[0.97]
   flex-shrink-0
-  min-w-fit
+  min-w-0
 `;
 
 // Estilos uniformes para los iconos
@@ -98,7 +97,9 @@ const getUniformLabelStyles = (isSelected: boolean = false) => `
   short-height:mt-0.5 short-height:text-xs
   landscape-small:short-height:mt-[0.15rem] landscape-small:short-height:text-[0.7rem]
   landscape-tablet-sm:short-height:mt-[0.15rem] landscape-tablet-sm:short-height:text-[0.7rem]
-  whitespace-nowrap
+  whitespace-normal
+  max-w-[5rem]
+  break-words
 `;
 
 function getNavBarFooterByRol(
@@ -226,7 +227,7 @@ const NavBarFooter = ({ Rol }: { Rol: RolesSistema }) => {
               datosAsistencia={datosAsistencia}
             />
           )}
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center overflow-hidden">
           {getNavBarFooterByRol(Rol, pathname)}
         </div>
       </nav>

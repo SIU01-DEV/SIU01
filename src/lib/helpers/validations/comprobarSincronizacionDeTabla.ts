@@ -18,37 +18,42 @@ export const comprobarSincronizacionDeTabla = async (
 ): Promise<boolean> => {
   try {
     // Obtener la última actualización local
-    const ultimaActualizacion =
+    const ultimaActualizacionLocal =
       await ultimaActualizacionTablasLocalesIDB.getByTabla(
         tablaInfo.nombreLocal!
       );
 
     // Obtener la última modificación remota
-    const ultimaModificacion = await new UltimaModificacionTablasIDB(
+    const ultimaModificacionRemota = await new UltimaModificacionTablasIDB(
       siasisAPI
     ).getByTabla(tablaInfo.nombreRemoto!);
 
-    // Si no hay actualización local, talvez aun no se ha hecho una peticion como tal a la BD
-    if (!ultimaActualizacion) {
+    // Si no hay modificación remota, consideramos que la actualización es más reciente
+    if (!ultimaModificacionRemota && !ultimaActualizacionLocal) {
+      // Si no hay modificación remota ni actualización local, sincronizamos por defecto y  obtenemos la última modificación remota de manera forzada
+      await new UltimaModificacionTablasIDB(siasisAPI).sync(true);
       return true;
     }
-
-    // Si no hay modificación remota, consideramos que la actualización es más reciente
-    if (!ultimaModificacion) {
+    // Si no hay actualización local, talvez aun no se ha hecho una peticion como tal a la BD
+    else if (!ultimaActualizacionLocal) {
       return true;
+    
+      // Si no hay modificación remota pero si local, la actualización local es más reciente
+    } else if (!ultimaModificacionRemota) {
+      return false;
     }
 
     // Convertir la fecha de actualización local a timestamp
     // (Ya está en zona horaria local)
     const fechaActualizacionLocal =
-      typeof ultimaActualizacion.Fecha_Actualizacion === "number"
-        ? ultimaActualizacion.Fecha_Actualizacion
-        : new Date(ultimaActualizacion.Fecha_Actualizacion).getTime();
+      typeof ultimaActualizacionLocal.Fecha_Actualizacion === "number"
+        ? ultimaActualizacionLocal.Fecha_Actualizacion
+        : new Date(ultimaActualizacionLocal.Fecha_Actualizacion).getTime();
 
     // Convertir la fecha de modificación remota (ISO string en UTC) a timestamp local
     // Primero creamos un objeto Date que automáticamente convertirá la fecha UTC a local
     const fechaModificacionUTC = new Date(
-      ultimaModificacion.Fecha_Modificacion
+      ultimaModificacionRemota.Fecha_Modificacion
     );
 
     // Luego obtenemos el timestamp local que ya tiene en cuenta la diferencia horaria

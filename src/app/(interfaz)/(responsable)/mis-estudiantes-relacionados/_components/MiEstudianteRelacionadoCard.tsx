@@ -365,12 +365,12 @@ const MiEstudianteRelacionadoCard = ({
           <b>
             {
               TiposIdentificadoresTextos[
-                extraerTipoDeIdentificador(Id_Estudiante)
+                extraerTipoDeIdentificador(String(Id_Estudiante))
               ]
             }
             :
           </b>{" "}
-          {extraerIdentificador(Id_Estudiante)}
+          {extraerIdentificador(String(Id_Estudiante))}
         </span>
 
         <i

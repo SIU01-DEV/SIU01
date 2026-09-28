@@ -16,9 +16,12 @@ import {
 import ErrorMessage from "../shared/errors/ErrorMessage";
 import { RolesSistema } from "@/interfaces/shared/RolesSistema";
 import PasswordInput from "../inputs/PasswordInput";
+import { CambiarContraseñaRequestBody } from "@/interfaces/shared/apis/shared/mis-datos/mi-contraseña/types";
 
-interface CambioContrasenaModalProps
-  extends Pick<ModalContainerProps, "eliminateModal"> {
+interface CambioContrasenaModalProps extends Pick<
+  ModalContainerProps,
+  "eliminateModal"
+> {
   siasisAPI: SiasisAPIS;
   onSuccess?: () => void;
   Rol: RolesSistema;
@@ -76,7 +79,7 @@ const CambioContrasenaModal = ({
 
   // Manejar cambios en el campo de contraseña actual
   const handleContraseñaActualChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
     setContraseñaActual(value);
@@ -85,7 +88,7 @@ const CambioContrasenaModal = ({
 
   // Manejar cambios en el campo de nueva contraseña
   const handleNuevaContraseñaChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
     setNuevaContraseña(value);
@@ -113,7 +116,10 @@ const CambioContrasenaModal = ({
         endpoint: "/api/mis-datos/mi-contrasena",
         method: "PUT",
         JSONBody: true,
-        body: JSON.stringify({ contraseñaActual, nuevaContraseña }),
+        body: JSON.stringify({
+          ContraseñaActual: contraseñaActual,
+          NuevaContraseña: nuevaContraseña,
+        } as CambiarContraseñaRequestBody),
         queryParams: { Rol },
       });
 
@@ -212,8 +218,8 @@ const CambioContrasenaModal = ({
               isSomethingLoading
                 ? "Procesando Solicitud..."
                 : !isValid
-                ? "Complete correctamente los campos"
-                : "No puede usar el botón ahora"
+                  ? "Complete correctamente los campos"
+                  : "No puede usar el botón ahora"
             }`}
             LoaderTSX={<Loader className="w-[1.3rem] p-[0.25rem] bg-negro" />}
             texto={isSomethingLoading ? "Cambiando..." : "Cambiar Contraseña"}

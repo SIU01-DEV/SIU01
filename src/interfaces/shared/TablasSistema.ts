@@ -41,14 +41,14 @@ export enum TablasRemoto {
   Tabla_Control_Salida_Profesores_Primaria = "T_Control_Salida_Mensual_Profesores_Primaria",
   Tabla_Control_Entrada_Profesores_Secundaria = "T_Control_Entrada_Mensual_Profesores_Secundaria",
   Tabla_Control_Salida_Profesores_Secundaria = "T_Control_Salida_Mensual_Profesores_Secundaria",
-  Tabla_Control_Entrada_Auxiliar = "T_Control_Entrada_Mensual_Auxiliar",
-  Tabla_Control_Salida_Auxiliar = "T_Control_Salida_Mensual_Auxiliar",
+  Tabla_Control_Entrada_Auxiliares = "T_Control_Entrada_Mensual_Auxiliar",
+  Tabla_Control_Salida_Auxiliares = "T_Control_Salida_Mensual_Auxiliar",
   Tabla_Control_Entrada_Personal_Administrativo = "T_Control_Entrada_Mensual_Personal_Administrativo",
   Tabla_Control_Salida_Personal_Administrativo = "T_Control_Salida_Mensual_Personal_Administrativo",
 
   // Configuración y sistema
   Tabla_Fechas_Importantes = "T_Fechas_Importantes",
-  Tabla_Horarios_Asistencia = "T_Horarios_Asistencia",
+  Tabla_Horarios_Generales = "T_Horarios_Generales",
   Tabla_Ajustes_Sistema = "T_Ajustes_Generales_Sistema",
   Tabla_Bloqueo_Roles = "T_Bloqueo_Roles",
   Tabla_Registro_Fallos = "T_Registro_Fallos_Sistema",
@@ -59,6 +59,10 @@ export enum TablasRemoto {
 
   // Reportes
   Tabla_Reportes_Asistencia_Escolar = "T_Reportes_Asistencia_Escolar",
+
+  Tabla_Recreos = "T_Recreos",
+  Tabla_Horarios_Por_Dias_Personal_Administrativo = "T_Horarios_Por_Dias_Personal_Administrativo",
+  Tabla_Horarios_Por_Dias_Directivos = "T_Horarios_Por_Dias_Directivos",
 }
 
 /**
@@ -101,20 +105,20 @@ export enum TablasLocal {
   Tabla_Vacaciones_Interescolares = "vacaciones_interescolares",
 
   // Control de asistencia personal
-  Tabla_Control_Entrada_directivos = "control_entrada_directivos",
-  Tabla_Control_Salida_directivos = "control_salida_directivos",
+  Tabla_Control_Entrada_Directivos = "control_entrada_directivos",
+  Tabla_Control_Salida_Directivos = "control_salida_directivos",
   Tabla_Control_Entrada_Profesores_Primaria = "control_entrada_profesores_primaria",
   Tabla_Control_Salida_Profesores_Primaria = "control_salida_profesores_primaria",
   Tabla_Control_Entrada_Profesores_Secundaria = "control_entrada_profesores_secundaria",
   Tabla_Control_Salida_Profesores_Secundaria = "control_salida_profesores_secundaria",
-  Tabla_Control_Entrada_Auxiliar = "control_entrada_auxiliar",
-  Tabla_Control_Salida_Auxiliar = "control_salida_auxiliar",
+  Tabla_Control_Entrada_Auxiliares = "control_entrada_auxiliar",
+  Tabla_Control_Salida_Auxiliares = "control_salida_auxiliar",
   Tabla_Control_Entrada_Personal_Administrativo = "control_entrada_personal_administrativo",
   Tabla_Control_Salida_Personal_Administrativo = "control_salida_personal_administrativo",
 
   // Configuración y sistema
   Tabla_Fechas_Importantes = "fechas_importantes",
-  Tabla_Horarios_Asistencia = "horarios_asistencia",
+  Tabla_Horarios_Generales = "horarios_asistencia",
   Tabla_Ajustes_Sistema = "ajustes_generales_sistema",
   Tabla_Bloqueo_Roles = "bloqueo_roles",
   Tabla_Registro_Fallos = "registro_fallos_sistema",
@@ -131,14 +135,22 @@ export enum TablasLocal {
 
   // Tabla para asistencias del día actual
   Tabla_Asistencias_Tomadas_Hoy = "asistencias_tomadas_hoy",
-  Tabla_Usuarios_Genericos_Cache = "usuarios_genericos_cache",
   Tabla_Archivos_Asistencia_Hoy = "archivos_asistencia_hoy",
+  
+  // Tablas para Caches de Busqueda
+  Tabla_Usuarios_Genericos_Cache = "usuarios_genericos_cache",
+  Tabla_Busqueda_Profesores_Secundaria_Cache = "busqueda_profesores_secundaria_cache",
+  Tabla_Busqueda_Profesores_Primaria_Cache = "busqueda_profesores_primaria_cache",
 
   // Persistencias para Colas
   Tabla_Cola_Asistencias_Escolares = "cola_asistencias_escolares",
 
   // Reportes
   Tabla_Reportes_Asistencia_Escolar = "reportes_asistencia_escolar",
+
+  Tabla_Recreos = "recreos",
+  Tabla_Horarios_Por_Dias_Personal_Administrativo = "horarios_por_dias_personal_administrativo",
+  Tabla_Horarios_Por_Dias_Directivos = "horarios_por_dias_directivos",
 }
 
 /**
@@ -337,14 +349,14 @@ export const TablasSistema = {
     sincronizable: true,
   },
   CONTROL_ENTRADA_AUXILIAR: {
-    nombreRemoto: TablasRemoto.Tabla_Control_Entrada_Auxiliar,
-    nombreLocal: TablasLocal.Tabla_Control_Entrada_Auxiliar,
+    nombreRemoto: TablasRemoto.Tabla_Control_Entrada_Auxiliares,
+    nombreLocal: TablasLocal.Tabla_Control_Entrada_Auxiliares,
     descripcion: "Control de entrada de auxiliares",
     sincronizable: true,
   },
   CONTROL_SALIDA_AUXILIAR: {
-    nombreRemoto: TablasRemoto.Tabla_Control_Salida_Auxiliar,
-    nombreLocal: TablasLocal.Tabla_Control_Salida_Auxiliar,
+    nombreRemoto: TablasRemoto.Tabla_Control_Salida_Auxiliares,
+    nombreLocal: TablasLocal.Tabla_Control_Salida_Auxiliares,
     descripcion: "Control de salida de auxiliares",
     sincronizable: true,
   },
@@ -368,9 +380,9 @@ export const TablasSistema = {
     descripcion: "Fechas importantes del año escolar",
     sincronizable: true,
   },
-  HORARIOS_ASISTENCIA: {
-    nombreRemoto: TablasRemoto.Tabla_Horarios_Asistencia,
-    nombreLocal: TablasLocal.Tabla_Horarios_Asistencia,
+  HORARIOS_GENERALES: {
+    nombreRemoto: TablasRemoto.Tabla_Horarios_Generales,
+    nombreLocal: TablasLocal.Tabla_Horarios_Generales,
     descripcion: "Configuración de horarios para toma de asistencia",
     sincronizable: true,
   },
@@ -453,6 +465,27 @@ export const TablasSistema = {
     nombreLocal: TablasLocal.Tabla_Reportes_Asistencia_Escolar,
     descripcion:
       "Reportes de asistencia escolar generados y almacenados en cache",
+    sincronizable: true,
+  },
+
+  RECREOS: {
+    nombreRemoto: TablasRemoto.Tabla_Recreos,
+    nombreLocal: TablasLocal.Tabla_Recreos,
+    descripcion: "Configuración de horarios de recreos por nivel educativo",
+    sincronizable: true,
+  },
+
+  HORARIOS_POR_DIAS_PERSONAL_ADMINISTRATIVO: {
+    nombreRemoto: TablasRemoto.Tabla_Horarios_Por_Dias_Personal_Administrativo,
+    nombreLocal: TablasLocal.Tabla_Horarios_Por_Dias_Personal_Administrativo,
+    descripcion: "Horarios laborales por día para personal administrativo",
+    sincronizable: true,
+  },
+
+  HORARIOS_POR_DIAS_DIRECTIVOS: {
+    nombreRemoto: TablasRemoto.Tabla_Horarios_Por_Dias_Directivos,
+    nombreLocal: TablasLocal.Tabla_Horarios_Por_Dias_Directivos,
+    descripcion: "Horarios laborales por día para directivos",
     sincronizable: true,
   },
 };

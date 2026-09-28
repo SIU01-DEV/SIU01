@@ -76,6 +76,12 @@ const Header = ({
   };
 
   const inicializarColaDeAsistencias = async () => {
+
+    // Si se trata de algun rol que no toma asistencias escolares, no inicializar la cola
+    if(Rol !== RolesSistema.Auxiliar && Rol !== RolesSistema.ProfesorPrimaria){
+      return;
+    }
+
     const { Asistencias_Escolares_QUEUE } = await import(
       "@/lib/utils/queues/AsistenciasEscolaresQueue"
     );
