@@ -20,7 +20,7 @@ const Auxiliares = () => {
       const auxiliares = await new AuxiliaresIDB(
         "API01",
         setIsSomethingLoading,
-        setError
+        setError,
       ).getAll();
 
       setAuxiliares(auxiliares);
@@ -30,7 +30,7 @@ const Auxiliares = () => {
   }, []);
 
   return (
-    <div className="w-full max-w-[80rem] h-full flex flex-col justify-between">
+    <div className="w-full max-w-[80rem] mb-auto flex flex-col justify-start">
       <h1
         className="text-[2.185rem] 
                     sxs-only:text-[1.587rem] 
@@ -50,40 +50,40 @@ const Auxiliares = () => {
       {!isSomethingLoading && auxiliares && auxiliares.length === 0 && (
         <span
           className="sxs-only:text-[11px] xs-only:text-[12px] sm-only:text-[13px] 
-                        landscape-small:text-[10.2px] landscape-tablet-sm:text-[10.2px]
-                        text-center w-full"
+                     landscape-small:text-[10.2px] landscape-tablet-sm:text-[10.2px]
+                     text-center w-full mt-4"
         >
           No se encontraron Auxiliares Registrados en el Sistema
         </span>
       )}
 
       <div
-        className="flex flex-col items-center w-full flex-1 pt-8 
-                     sxs-only:pt-[1.38rem] xs-only:pt-[1.61rem] sm-only:pt-[1.61rem] md-only:pt-8
-                     landscape-small:pt-[1.7rem] landscape-tablet-sm:pt-[1.7rem]"
+        className="flex flex-col items-center w-full pt-8 
+                   sxs-only:pt-[1.38rem] xs-only:pt-[1.61rem] sm-only:pt-[1.61rem] md-only:pt-8
+                   landscape-small:pt-[1.7rem] landscape-tablet-sm:pt-[1.7rem]"
       >
         {isSomethingLoading && (
           <span
             className="sxs-only:text-[11px] xs-only:text-[12px] sm-only:text-[13px] 
-                          landscape-small:text-[10.2px] landscape-tablet-sm:text-[10.2px]
-                          flex items-center"
+                       landscape-small:text-[10.2px] landscape-tablet-sm:text-[10.2px]
+                       flex items-center"
           >
             Actualizando
             <Loader
               className="w-[2rem] sxs-only:w-[1.84rem] xs-only:w-[1.84rem] 
-                              landscape-small:w-[1.7rem] landscape-tablet-sm:w-[1.7rem]
-                              p-2 sxs-only:p-[0.46rem] bg-black ml-2
-                              landscape-small:ml-[0.425rem] landscape-tablet-sm:ml-[0.425rem]"
+                         landscape-small:w-[1.7rem] landscape-tablet-sm:w-[1.7rem]
+                         p-2 sxs-only:p-[0.46rem] bg-black ml-2
+                         landscape-small:ml-[0.425rem] landscape-tablet-sm:ml-[0.425rem]"
             />
           </span>
         )}
         {auxiliares && (
           <div
             className="flex flex-wrap justify-center w-full 
-                         gap-y-6 sxs-only:gap-y-[0.92rem] xs-only:gap-y-[1.15rem] 
-                         gap-x-4 sxs-only:gap-x-[0.46rem] xs-only:gap-x-[0.69rem]
-                         landscape-small:gap-y-[1.275rem] landscape-small:gap-x-[0.85rem]
-                         landscape-tablet-sm:gap-y-[1.275rem] landscape-tablet-sm:gap-x-[0.85rem]"
+                       gap-y-6 sxs-only:gap-y-[0.92rem] xs-only:gap-y-[1.15rem] 
+                       gap-x-4 sxs-only:gap-x-[0.46rem] xs-only:gap-x-[0.69rem]
+                       landscape-small:gap-y-[1.275rem] landscape-small:gap-x-[0.85rem]
+                       landscape-tablet-sm:gap-y-[1.275rem] landscape-tablet-sm:gap-x-[0.85rem]"
           >
             {auxiliares.map((auxiliar) => (
               <AuxiliardCard key={auxiliar.Id_Auxiliar} Auxiliar={auxiliar} />

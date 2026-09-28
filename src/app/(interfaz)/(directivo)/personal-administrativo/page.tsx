@@ -20,7 +20,7 @@ const PersonalAdministrativo = () => {
       const personalAdministrativo = await new PersonalAdministrativoIDB(
         "API01",
         setIsSomethingLoading,
-        setError
+        setError,
       ).getAll();
 
       setPersonalAdministrivo(personalAdministrativo);
@@ -30,7 +30,11 @@ const PersonalAdministrativo = () => {
   }, []);
 
   return (
-    <div className="w-full max-w-[80rem] h-full flex flex-col justify-start">
+    /* 
+      mb-auto empuja todo el espacio vacío hacia el fondo mientras carga,
+      asegurando que el título y el loader queden fijos en la parte superior.
+    */
+    <div className="w-full max-w-[80rem] mb-auto flex flex-col justify-start">
       <div className="flex flex-col items-center">
         <h1
           className="text-[2.185rem] 
@@ -82,12 +86,12 @@ const PersonalAdministrativo = () => {
 
       <div
         className="mt-7 xs-only:mt-[1.38rem] sxs-only:mt-[1.15rem] 
-                     landscape-small:mt-[1.487rem] landscape-tablet-sm:mt-[1.487rem]
-                     flex flex-wrap justify-center w-full 
-                     gap-y-7 sxs-only:gap-y-[1.15rem] xs-only:gap-y-[1.38rem] 
-                     gap-x-8 sxs-only:gap-x-[0.92rem] xs-only:gap-x-[0.92rem]
-                     landscape-small:gap-y-[1.487rem] landscape-small:gap-x-[1.7rem]
-                     landscape-tablet-sm:gap-y-[1.487rem] landscape-tablet-sm:gap-x-[1.7rem]"
+                      landscape-small:mt-[1.487rem] landscape-tablet-sm:mt-[1.487rem]
+                      flex flex-wrap justify-center w-full 
+                      gap-y-7 sxs-only:gap-y-[1.15rem] xs-only:gap-y-[1.38rem] 
+                      gap-x-8 sxs-only:gap-x-[0.92rem] xs-only:gap-x-[0.92rem]
+                      landscape-small:gap-y-[1.487rem] landscape-small:gap-x-[1.7rem]
+                      landscape-tablet-sm:gap-y-[1.487rem] landscape-tablet-sm:gap-x-[1.7rem]"
       >
         {personalAdministrivo &&
           personalAdministrivo.map((unPersonal) => (

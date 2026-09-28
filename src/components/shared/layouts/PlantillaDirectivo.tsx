@@ -14,12 +14,11 @@ const PlantillaDirectivo = ({
   Nombres: RequestCookie;
   Apellidos: RequestCookie;
   Genero: RequestCookie;
-
   Google_Drive_Foto_ID: string | null;
 }) => {
   return (
     <>
-      <section className="max-w-screen grid grid-rows-[min-content_1fr] min-h-[100dvh] -border-2 border-blue-500">
+      <section className="w-full flex flex-col relative">
         <Header
           Genero={Genero}
           Nombres={Nombres}
@@ -29,12 +28,10 @@ const PlantillaDirectivo = ({
         />
         <div
           style={{ contain: "inline-size" }}
-          className="w-full -border-2 border-green-900 flex relative top-0 "
+          className="w-full flex flex-1 items-start relative"
         >
           <SidebarDirectivo />
-          <main className="-border-2 border-black flex-1 h-full py-4 px-8 flex items-center justify-center overflow-auto">
-            {children}
-          </main>
+          {children}
         </div>
       </section>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>

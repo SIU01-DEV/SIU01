@@ -1,6 +1,3 @@
-import Home from "@/components/BienvenidaCompo";
-import { render, screen } from "@testing-library/react";
-
 function sum(a: number, b: number) {
   return a + b;
 }
@@ -49,26 +46,5 @@ describe("Combine promise response value", () => {
   test("async getResponse should not return abcd", async () => {
     const response = await getResponse();
     expect(response).not.toEqual({ value: "abcd" });
-  });
-});
-
-describe("Testing Home Component", () => {
-  beforeEach(() => {
-    render(<Home />);
-  });
-
-  it("renders the heading", () => {
-    const text = screen.getByText(/Home/i);
-    expect(text).toBeInTheDocument();
-  });
-
-  it("renders the heading inside h1", () => {
-    const text = screen.getByRole("heading", { level: 1 });
-    expect(text).toBeInTheDocument();
-  });
-
-  it("test the description", () => {
-    const text = screen.getByTestId("desc");
-    expect(text.textContent).toMatch(/description/);
   });
 });

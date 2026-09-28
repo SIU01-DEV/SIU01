@@ -31,7 +31,6 @@ import { IAsistenciasEscolaresIDB } from "@/lib/utils/local/db/models/Asistencia
 import { AsistenciasEscolaresParaProfesoresPrimariaIDB } from "@/lib/utils/local/db/models/AsistenciasEscolares/Para ProfesoresPrimaria/AsistenciasEscolaresParaProfesoresPrimariaIDB";
 import { AsistenciasEscolaresParaTutoresIDB } from "@/lib/utils/local/db/models/AsistenciasEscolares/Para TutoresSecundaria/AsistenciasEscolaresParaTutoresSecundariaIDB";
 import GeneradorTarjetaQRPorAulaModal from "@/components/modals/QR/GeneradorDeQRPorAulaModal";
-import useFechaHoraReal from "@/hooks/useFechaHoraReal";
 import useFechaReduxActual from "@/hooks/system-time/useFechaReduxActual";
 
 const MOSTRAR_MENSAJES_EXITO = false;
